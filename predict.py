@@ -2,6 +2,7 @@
 # https://github.com/replicate/cog/blob/main/docs/python.md
 import contextlib
 import typing
+from collections import defaultdict
 
 import torch
 from PIL import Image
@@ -17,6 +18,7 @@ from diffusers import (
 class Predictor(BasePredictor):
     sd_pipes = {}
     img2img_pipes = {}
+    schedulers = defaultdict(dict)
 
     def predict(
         self,
@@ -43,15 +45,13 @@ class Predictor(BasePredictor):
         if init_image:
             init_image = Image.open(init_image).convert("RGB")
 
-        pipe = self.load_pipeline(hf_model_id=hf_model_id, init_image=init_image)
-
-        with use_scheduler(
-            pipe=pipe,
-            scheduler=scheduler,
+        pipe = self.load_pipeline(
             hf_model_id=hf_model_id,
-        ), use_in_cuda(
-            pipe=pipe,
-        ):
+            scheduler=scheduler,
+            init_image=init_image,
+        )
+
+        with use_in_cuda(pipe):
             generator = torch.Generator("cuda").manual_seed(seed)
 
             if init_image:
@@ -88,6 +88,7 @@ class Predictor(BasePredictor):
     def load_pipeline(
         self,
         *,
+        scheduler: str,
         hf_model_id: str,
         init_image: Path,
     ) -> typing.Union[StableDiffusionPipeline, StableDiffusionImg2ImgPipeline]:
@@ -103,49 +104,30 @@ class Predictor(BasePredictor):
         except KeyError:
             pipe = pipe_cls.from_pretrained(hf_model_id, torch_dtype=torch.float16)
             cache[hf_model_id] = pipe
+            self.update_schedulers(hf_model_id, pipe)
+
+        try:
+            pipe.schduler = self.schedulers[hf_model_id][scheduler]
+        except KeyError:
+            raise ValueError(
+                f"Incompatible scheduler `{scheduler}` for `{hf_model_id}`"
+            )
 
         return pipe
 
-
-@contextlib.contextmanager
-def use_scheduler(
-    *,
-    pipe: DiffusionPipeline,
-    scheduler: str,
-    hf_model_id: str,
-):
-    if not scheduler:
-        yield
-        return
-
-    default_scheduler = pipe.scheduler
-    try:
-        pipe.scheduler = get_scheduler_for_pipeline(
-            pipe=pipe,
-            scheduler=scheduler,
-            hf_model_id=hf_model_id,
-        )
-        yield
-    finally:
-        pipe.scheduler = default_scheduler
-
-
-def get_scheduler_for_pipeline(
-    *,
-    pipe: DiffusionPipeline,
-    scheduler: str,
-    hf_model_id: str,
-) -> SchedulerMixin:
-
-    for cls in pipe.scheduler.compatibles:
-        if cls.__name__ == scheduler:
-            return cls.from_config(pipe.scheduler.config)
-
-    raise ValueError(f"Incompatible scheduler `{scheduler}` for `{hf_model_id}`")
+    def update_schedulers(self, hf_model_id: str, pipe: DiffusionPipeline):
+        schedulers = {None: pipe.scheduler}
+        for cls in pipe.scheduler.compatibles:
+            try:
+                schedulers[cls.__name__] = cls.from_config(pipe.scheduler.config)
+            except ImportError as e:
+                print(e)
+                continue
+        self.schedulers[hf_model_id] = schedulers
 
 
 @contextlib.contextmanager
-def use_in_cuda(*, pipe: DiffusionPipeline):
+def use_in_cuda(pipe: DiffusionPipeline):
     pipe.to("cuda")
     try:
         pipe.enable_xformers_memory_efficient_attention()
