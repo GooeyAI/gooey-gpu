@@ -37,10 +37,11 @@ ENV WORKDIR /src
 RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 
-# install SD
+# app dependencies
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# copy sources
 COPY . .
 
 # run cog
