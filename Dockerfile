@@ -44,5 +44,5 @@ RUN pip install -r requirements.txt
 # copy sources
 COPY . .
 
-# run cog
-CMD python3 -m cog.server.http
+# run prediction server
+CMD uvicorn predict:app --host 0.0.0.0 --port 5000
