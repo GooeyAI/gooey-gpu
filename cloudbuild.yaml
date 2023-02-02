@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/kaniko-project/executor:latest'
+  args:
+  - --destination=gcr.io/dara-c1b52.appspot.com/sd-multi
+  - --cache=true

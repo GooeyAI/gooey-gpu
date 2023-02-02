@@ -44,5 +44,7 @@ RUN pip install -r requirements.txt
 # copy sources
 COPY . .
 
+ENV PYTHONUNBUFFERED=1
+
 # run prediction server
-CMD uvicorn predict:app --host 0.0.0.0 --port 5000
+CMD uvicorn server:app --host 0.0.0.0 --port 5000
