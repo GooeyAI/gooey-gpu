@@ -37,9 +37,17 @@ ENV WORKDIR /src
 RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 
+# setup deforum environment
+RUN git clone https://github.com/deforum-art/deforum-stable-diffusion
+RUN echo '' > deforum-stable-diffusion/src/k_diffusion/__init__.py
+
 # app dependencies
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	ffmpeg \
+	&& rm -rf /var/lib/apt/lists/*
 
 # copy sources
 COPY . .

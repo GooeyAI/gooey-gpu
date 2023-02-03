@@ -2,7 +2,7 @@
 
 NAME=sd-multi-dev
 
-set -x
+set -ex
 
 docker build . -t $NAME
 docker run -it --rm \

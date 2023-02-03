@@ -1,7 +1,10 @@
+import shutil
 import traceback
 import typing
+import uuid
 from collections import defaultdict
 
+import requests
 import torch
 from diffusers import (
     StableDiffusionPipeline,
@@ -14,19 +17,12 @@ from diffusers import (
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+import deforum_script
 import gooey_gpu
 
 app = FastAPI()
 
 MAX_IMAGE_SIZE = (768, 768)
-
-
-class BaseInputs(BaseModel):
-    prompt: typing.List[str]
-    negative_prompt: typing.List[str] = None
-    num_images_per_prompt: int
-    num_inference_steps: int
-    guidance_scale: float
 
 
 class PipelineInfo(BaseModel):
@@ -36,7 +32,67 @@ class PipelineInfo(BaseModel):
     seed: int
 
 
-class Text2ImgInputs(BaseInputs):
+@app.post("/deforum/")
+@gooey_gpu.endpoint
+def deforum(pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs):
+    root = _load_deforum(pipeline)
+
+    args = deforum_script.DeforumArgs(root=root, batch_name=str(uuid.uuid1()))
+    args.seed = pipeline.seed
+    if pipeline.scheduler:
+        args.sampler = pipeline.scheduler
+
+    anim_args = deforum_script.DeforumAnimArgs()
+    for k, v in inputs.dict().items():
+        setattr(anim_args, k, v)
+
+    with gooey_gpu.use_gpu(root.model):
+        deforum_script.run(root, args, anim_args)
+        vid_path = deforum_script.create_video(args, anim_args)
+
+    with open(vid_path, "rb") as f:
+        vid_bytes = f.read()
+    shutil.rmtree(args.outdir, ignore_errors=True)
+
+    for url in pipeline.upload_urls:
+        r = requests.put(
+            url,
+            headers={"Content-Type": "video/mp4"},
+            data=vid_bytes,
+        )
+        r.raise_for_status()
+        return
+
+
+_deforum_cache = {}
+
+
+def _load_deforum(pipeline):
+    try:
+        root = _deforum_cache[pipeline.model_id]
+    except KeyError:
+        root = deforum_script.Root()
+        root.map_location = gooey_gpu.DEVICE_ID
+        root.model_checkpoint = pipeline.model_id
+        with gooey_gpu.use_gpu():
+            deforum_script.setup(root)
+        _deforum_cache[pipeline.model_id] = root
+    return root
+
+
+def obj_to_dict(obj):
+    return {k: v for k, v in vars(obj).items() if not k.startswith("__")}
+
+
+class DiffusersInputs(BaseModel):
+    prompt: typing.List[str]
+    negative_prompt: typing.List[str] = None
+    num_images_per_prompt: int
+    num_inference_steps: int
+    guidance_scale: float
+
+
+class Text2ImgInputs(DiffusersInputs):
     width: int
     height: int
 
@@ -51,7 +107,7 @@ def text2img(pipeline: PipelineInfo, inputs: Text2ImgInputs):
     )
 
 
-class Img2ImgInputs(BaseInputs):
+class Img2ImgInputs(DiffusersInputs):
     image: typing.List[str]
     strength: float
 
@@ -67,7 +123,7 @@ def img2img(pipeline: PipelineInfo, inputs: Img2ImgInputs):
     )
 
 
-class InpaintInputs(BaseInputs):
+class InpaintInputs(DiffusersInputs):
     image: typing.List[str]
     mask_image: typing.List[str]
 
@@ -84,7 +140,7 @@ def inpaint(pipeline: PipelineInfo, inputs: InpaintInputs):
     )
 
 
-class UpscaleInputs(BaseInputs):
+class UpscaleInputs(DiffusersInputs):
     image: typing.List[str]
 
 
@@ -99,7 +155,7 @@ def upscale(pipeline: PipelineInfo, inputs: UpscaleInputs):
     )
 
 
-class InstructPix2PixInputs(BaseInputs):
+class InstructPix2PixInputs(DiffusersInputs):
     image: typing.List[str]
     image_guidance_scale: float
 
@@ -117,7 +173,7 @@ def instruct_pix2pix(pipeline: PipelineInfo, inputs: InstructPix2PixInputs):
 
 def predict(
     pipeline: PipelineInfo,
-    inputs: BaseInputs,
+    inputs: DiffusersInputs,
     pipe_cls,
     **kwargs,
 ):
@@ -126,7 +182,7 @@ def predict(
 
     pipe = load_pipeline(pipeline, pipe_cls)
 
-    with gooey_gpu.inference_mode(pipe):
+    with gooey_gpu.use_gpu(pipe), torch.inference_mode():
         _remove_safety_checker(pipe)
         pipe.enable_xformers_memory_efficient_attention()
 
@@ -151,7 +207,7 @@ def load_pipeline(
     try:
         pipe = pipes[pipeline.model_id]
     except KeyError:
-        with gooey_gpu.inference_mode():
+        with gooey_gpu.use_gpu():
             pipe = pipe_cls.from_pretrained(
                 pipeline.model_id, torch_dtype=torch.float16
             )

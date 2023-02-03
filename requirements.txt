@@ -1,21 +1,47 @@
-redis~=4.4.2
-Pillow~=9.4.0
-fastapi~=0.89.1
-sentry-sdk~=1.14.0
+## gooey-gpu
+redis ~= 4.4.2
+Pillow ~= 9.4.0
+fastapi ~= 0.89.1
+uvicorn[standard] ~= 0.20.0
+sentry-sdk ~= 1.14.0
 
-# pytorch
+## pytorch
 --extra-index-url https://download.pytorch.org/whl/cu116
 torch==1.13.1+cu116
 torchvision==0.14.1+cu116
 torchaudio==0.13.1+cu116
 
-# xformers
+## xformers
 xformers==0.0.16
 triton==2.0.0.dev20221202
 
-# huggingface diffusers
-diffusers~=0.12.0
-transformers~=4.25.1
-accelerate~=0.15.0
+## huggingface diffusers
+diffusers ~= 0.12.0
+transformers ~= 4.25.1
+accelerate ~= 0.15.0
 
-scipy~=1.10.0
+## google colab general
+scipy ~= 1.10.0
+opencv-python ~= 4.7.0.68
+pandas ~= 1.5.3
+scikit-image ~= 0.19.3
+numexpr ~= 2.8.4
+
+## deforum
+omegaconf ~= 2.2.3
+einops ~= 0.4.1
+pytorch-lightning ~= 1.7.7
+torchmetrics ~= 0.9.3
+safetensors ~= 0.2.8
+kornia ~= 0.6.7
+ftfy ~= 6.1.1
+jsonmerge ~= 1.9.0
+matplotlib ~= 3.6.3
+resize-right ~= 0.0.2
+timm ~= 0.6.12
+torchdiffeq ~= 0.2.3
+scikit-learn ~= 1.2.1
+torchsde ~= 0.2.5
+open-clip-torch ~= 2.10.1
+numpngw ~= 0.1.2
+ipython ~= 8.9.0

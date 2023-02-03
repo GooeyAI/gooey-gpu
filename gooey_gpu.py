@@ -2,6 +2,7 @@ import contextlib
 import gc
 import io
 import os
+import threading
 import traceback
 import typing
 from concurrent.futures import ThreadPoolExecutor
@@ -19,7 +20,7 @@ from redis.lock import Lock
 from starlette.responses import Response
 
 DEVICE_ID = os.environ.get("DEVICE_ID", "cuda:0")
-REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
+REDIS_HOST = os.environ.get("REDIS_HOST")
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
 
@@ -39,26 +40,18 @@ def endpoint(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         s = time()
-
-        print("-*-*-")
-        print(f" ---> {fn.__name__}: {args!r} {kwargs!r}")
-
+        print(f"---> {fn.__name__}: {args!r} {kwargs!r}")
         try:
             response = fn(*args, **kwargs)
-
         except Exception as e:
             traceback.print_exc()
             sentry_sdk.capture_exception(e)
             return Response(repr(e), status_code=500)
-
         finally:
             # just for good measure - https://pytorch.org/docs/stable/notes/faq.html#my-out-of-memory-exception-handler-can-t-allocate-memory
             gc.collect()
             torch.cuda.empty_cache()
-
             print(f"Total Time: {time() - s:.3f}s")
-            print("-*-*-")
-
         return Response(response)
 
     return wrapper
@@ -88,45 +81,49 @@ class GpuLock(Lock):
             super().release()
 
 
-redis_client = redis.Redis(REDIS_HOST)
-gpu_lock = GpuLock(redis_client, f"gpu-locks/{DEVICE_ID}")
+if REDIS_HOST:
+    redis_client = redis.Redis(REDIS_HOST)
+    gpu_lock = GpuLock(redis_client, f"gpu-locks/{DEVICE_ID}")
+else:
+    gpu_lock = threading.RLock()
 
 
 @contextlib.contextmanager
-def inference_mode(*models):
-    # move to gpu
-    for model in models:
-        model.to(DEVICE_ID)
-    try:
+def use_gpu(*models):
+    with gpu_lock:
+        print(f"✨ {DEVICE_ID} Acquired ✨")
+        # move to gpu
+        for model in models:
+            model.to(DEVICE_ID)
         s = time()
-        with gpu_lock, torch.inference_mode():
+        try:
             # run context manager
             yield
-        print(f"GPU Time: {time() - s:.3f}s")
-    finally:
-        # move to cpu
-        for model in models:
-            model.to("cpu")
-        # free memory
-        gc.collect()
-        torch.cuda.empty_cache()
+        finally:
+            # move to cpu
+            for model in models:
+                model.to("cpu")
+            # free memory
+            gc.collect()
+            torch.cuda.empty_cache()
+            print(f"✨ {DEVICE_ID} Time: {time() - s:.3f}s ✨")
 
 
 def download_images(
     urls: typing.List[str],
-    mode: str = "RGB",
     max_size: (int, int) = None,
+    mode: str = "RGB",
 ) -> typing.List[PIL.Image.Image]:
     def fn(url):
-        return download_image(url, mode, max_size)
+        return download_image(url, max_size, mode)
 
     return list(map_parallel(fn, urls))
 
 
 def download_image(
     url: str,
-    mode: str = "RGB",
     max_size: (int, int) = None,
+    mode: str = "RGB",
 ) -> PIL.Image.Image:
     im_bytes = requests.get(url).content
     f = io.BytesIO(im_bytes)
