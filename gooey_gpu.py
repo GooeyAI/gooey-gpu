@@ -17,7 +17,7 @@ import sentry_sdk
 import torch
 from redis.exceptions import LockError
 from redis.lock import Lock
-from starlette.responses import Response
+from starlette.responses import JSONResponse
 
 DEVICE_ID = os.environ.get("DEVICE_ID", "cuda:0")
 REDIS_HOST = os.environ.get("REDIS_HOST")
@@ -46,12 +46,12 @@ def endpoint(fn):
         except Exception as e:
             traceback.print_exc()
             sentry_sdk.capture_exception(e)
-            return Response(
+            return JSONResponse(
                 {
                     "type": type(e).__name__,
-                    "str": str(e)[:1000],
-                    "repr": repr(e)[:1000],
-                    "format_exc": traceback.format_exc(),
+                    "str": str(e)[:5000],
+                    "repr": repr(e)[:5000],
+                    "format_exc": traceback.format_exc()[:5000],
                 },
                 status_code=500,
             )
@@ -60,7 +60,7 @@ def endpoint(fn):
             gc.collect()
             torch.cuda.empty_cache()
             print(f"Total Time: {time() - s:.3f}s")
-        return Response(response)
+        return JSONResponse(response)
 
     return wrapper
 
