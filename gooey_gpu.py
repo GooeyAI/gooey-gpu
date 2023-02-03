@@ -46,7 +46,15 @@ def endpoint(fn):
         except Exception as e:
             traceback.print_exc()
             sentry_sdk.capture_exception(e)
-            return Response(repr(e), status_code=500)
+            return Response(
+                {
+                    "type": type(e).__name__,
+                    "str": str(e)[:1000],
+                    "repr": repr(e)[:1000],
+                    "format_exc": traceback.format_exc(),
+                },
+                status_code=500,
+            )
         finally:
             # just for good measure - https://pytorch.org/docs/stable/notes/faq.html#my-out-of-memory-exception-handler-can-t-allocate-memory
             gc.collect()
@@ -90,12 +98,13 @@ else:
 
 @contextlib.contextmanager
 def use_gpu(*models):
+    s = time()
     with gpu_lock:
-        print(f"✨ {DEVICE_ID} Acquired ✨")
+        print(f"⚡️ {DEVICE_ID} acquired in {time() - s:.3f}s")
+        s = time()
         # move to gpu
         for model in models:
             model.to(DEVICE_ID)
-        s = time()
         try:
             # run context manager
             yield
@@ -106,7 +115,7 @@ def use_gpu(*models):
             # free memory
             gc.collect()
             torch.cuda.empty_cache()
-            print(f"✨ {DEVICE_ID} Time: {time() - s:.3f}s ✨")
+            print(f"⚡️ {DEVICE_ID} released in {time() - s:.3f}s")
 
 
 def download_images(

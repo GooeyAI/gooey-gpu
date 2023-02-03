@@ -38,21 +38,24 @@ def deforum(pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs):
     root = _load_deforum(pipeline)
 
     args = deforum_script.DeforumArgs(root=root, batch_name=str(uuid.uuid1()))
-    args.seed = pipeline.seed
-    if pipeline.scheduler:
-        args.sampler = pipeline.scheduler
+    try:
+        args.seed = pipeline.seed
+        if pipeline.scheduler:
+            args.sampler = pipeline.scheduler
 
-    anim_args = deforum_script.DeforumAnimArgs()
-    for k, v in inputs.dict().items():
-        setattr(anim_args, k, v)
+        anim_args = deforum_script.DeforumAnimArgs()
+        for k, v in inputs.dict().items():
+            setattr(anim_args, k, v)
 
-    with gooey_gpu.use_gpu(root.model):
-        deforum_script.run(root, args, anim_args)
+        with gooey_gpu.use_gpu(root.model):
+            deforum_script.run(root, args, anim_args)
+
         vid_path = deforum_script.create_video(args, anim_args)
+        with open(vid_path, "rb") as f:
+            vid_bytes = f.read()
 
-    with open(vid_path, "rb") as f:
-        vid_bytes = f.read()
-    shutil.rmtree(args.outdir, ignore_errors=True)
+    finally:
+        shutil.rmtree(args.outdir, ignore_errors=True)
 
     for url in pipeline.upload_urls:
         r = requests.put(
