@@ -5,7 +5,7 @@ import os
 import traceback
 import typing
 from concurrent.futures import ThreadPoolExecutor
-from functools import wraps, partial
+from functools import wraps
 from time import time
 
 import PIL.Image
@@ -14,6 +14,8 @@ import redis
 import requests
 import sentry_sdk
 import torch
+from redis.exceptions import LockError
+from redis.lock import Lock
 from starlette.responses import Response
 
 DEVICE_ID = os.environ.get("DEVICE_ID", "cuda:0")
@@ -30,6 +32,7 @@ if SENTRY_DSN:
         traces_sample_rate=1.0,
         send_default_pii=True,
     )
+    print("Sentry error tracking enabled.")
 
 
 def endpoint(fn):
@@ -61,21 +64,43 @@ def endpoint(fn):
     return wrapper
 
 
-def gpu_lock():
-    return redis_client.lock(f"gpu-locks/{DEVICE_ID}")
+class GpuLock(Lock):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.local._count = 0
+
+    def acquire(self, *args, **kwargs) -> bool:
+        if self.owned():
+            self.local._count += 1
+            return True
+        s = time()
+        rc = super().acquire(*args, **kwargs)
+        if rc:
+            self.local._count = 1
+            print(f"GPU Acquired: {time() - s:.3f}s")
+        return rc
+
+    def release(self):
+        if not self.owned():
+            raise LockError("cannot release un-acquired lock")
+        self.local._count -= 1
+        if not self.local._count:
+            super().release()
 
 
 redis_client = redis.Redis(REDIS_HOST)
+gpu_lock = GpuLock(redis_client, f"gpu-locks/{DEVICE_ID}")
 
 
 @contextlib.contextmanager
-def use_gpu(*models):
+def inference_mode(*models):
     # move to gpu
     for model in models:
         model.to(DEVICE_ID)
     try:
         s = time()
-        with torch.inference_mode():
+        with gpu_lock, torch.inference_mode():
+            # run context manager
             yield
         print(f"GPU Time: {time() - s:.3f}s")
     finally:
@@ -89,17 +114,23 @@ def use_gpu(*models):
 
 def download_images(
     urls: typing.List[str],
+    mode: str = "RGB",
     max_size: (int, int) = None,
 ) -> typing.List[PIL.Image.Image]:
-    fn = partial(download_image, max_size=max_size)
-    with ThreadPoolExecutor(len(urls)) as pool:
-        return list(pool.map(fn, urls))
+    def fn(url):
+        return download_image(url, mode, max_size)
+
+    return list(map_parallel(fn, urls))
 
 
-def download_image(url: str, max_size: (int, int) = None) -> PIL.Image.Image:
+def download_image(
+    url: str,
+    mode: str = "RGB",
+    max_size: (int, int) = None,
+) -> PIL.Image.Image:
     im_bytes = requests.get(url).content
     f = io.BytesIO(im_bytes)
-    im_pil = PIL.Image.open(f).convert("RGB")
+    im_pil = PIL.Image.open(f).convert(mode)
     if max_size:
         im_pil = resize_img_scale(im_pil, max_size)
     return im_pil
@@ -114,14 +145,25 @@ def resize_img_scale(im_pil: PIL.Image.Image, max_size: (int, int)) -> PIL.Image
 
 
 def upload_images(images: list[PIL.Image.Image], upload_urls: list[str]):
-    for im_pil, upload_url in zip(images, upload_urls):
-        f = io.BytesIO()
-        im_pil.save(f, format="PNG")
-        im_bytes = f.getvalue()
+    def fn(args):
+        return upload_image(*args)
 
-        r = requests.put(
-            upload_url,
-            headers={"Content-Type": "image/png"},
-            data=im_bytes,
-        )
-        r.raise_for_status()
+    list(map_parallel(fn, list(zip(images, upload_urls))))
+
+
+def upload_image(im_pil: PIL.Image.Image, url: str):
+    f = io.BytesIO()
+    im_pil.save(f, format="PNG")
+    im_bytes = f.getvalue()
+
+    r = requests.put(
+        url,
+        headers={"Content-Type": "image/png"},
+        data=im_bytes,
+    )
+    r.raise_for_status()
+
+
+def map_parallel(fn, it):
+    with ThreadPoolExecutor(max_workers=len(it)) as pool:
+        return list(pool.map(fn, it))

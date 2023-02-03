@@ -124,17 +124,16 @@ def predict(
     inputs_dict = inputs.dict()
     inputs_dict.update(kwargs)
 
-    with gooey_gpu.gpu_lock():
-        pipe = load_pipeline(pipeline, pipe_cls)
+    pipe = load_pipeline(pipeline, pipe_cls)
 
-        with gooey_gpu.use_gpu(pipe):
-            _remove_safety_checker(pipe)
-            pipe.enable_xformers_memory_efficient_attention()
+    with gooey_gpu.inference_mode(pipe):
+        _remove_safety_checker(pipe)
+        pipe.enable_xformers_memory_efficient_attention()
 
-            generator = torch.Generator("cuda").manual_seed(pipeline.seed)
-            output = pipe(**inputs_dict, generator=generator)
+        generator = torch.Generator("cuda").manual_seed(pipeline.seed)
+        output = pipe(**inputs_dict, generator=generator)
 
-            output_images = output.images
+        output_images = output.images
 
     gooey_gpu.upload_images(output_images, pipeline.upload_urls)
 
@@ -152,9 +151,12 @@ def load_pipeline(
     try:
         pipe = pipes[pipeline.model_id]
     except KeyError:
-        pipe = pipe_cls.from_pretrained(pipeline.model_id, torch_dtype=torch.float16)
-        pipes[pipeline.model_id] = pipe
-        update_schedulers(pipeline.model_id, pipe)
+        with gooey_gpu.inference_mode():
+            pipe = pipe_cls.from_pretrained(
+                pipeline.model_id, torch_dtype=torch.float16
+            )
+            pipes[pipeline.model_id] = pipe
+            update_schedulers(pipeline.model_id, pipe)
 
     try:
         pipe.schduler = schedulers_cache[pipeline.model_id][pipeline.scheduler]
