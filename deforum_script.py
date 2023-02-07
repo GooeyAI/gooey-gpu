@@ -56,7 +56,7 @@ class Root:
 
 
 def setup(root: Root):
-    root.models_path, root.output_path = get_model_output_paths(root)
+    # root.models_path, root.output_path = get_model_output_paths(root)
     root.model, root.device = load_model(
         root, load_on_run_all=True, check_sha256=True, map_location=root.map_location
     )
@@ -286,9 +286,9 @@ class DeforumArgs:
     init_c = None
     seed_internal = 0
 
-    def __init__(self, root: Root, batch_name: str) -> None:
+    def __init__(self, batch_name: str) -> None:
         self.batch_name = batch_name
-        self.outdir = get_output_folder(root.output_path, self.batch_name)
+        self.outdir = get_output_folder(Root.output_path, self.batch_name)
 
 
 def run(root: Root, args: DeforumArgs, anim_args: DeforumAnimArgs):

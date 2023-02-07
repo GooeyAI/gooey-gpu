@@ -30,6 +30,7 @@ RUN curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master
 # app dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	libgl1-mesa-glx \
+	ffmpeg \
 	&& rm -rf /var/lib/apt/lists/*
 
 # copy to /src
@@ -44,10 +45,6 @@ RUN echo '' > deforum-stable-diffusion/src/k_diffusion/__init__.py
 # app dependencies
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	ffmpeg \
-	&& rm -rf /var/lib/apt/lists/*
 
 # copy sources
 COPY . .

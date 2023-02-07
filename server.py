@@ -21,6 +21,7 @@ import deforum_script
 import gooey_gpu
 
 app = FastAPI()
+gooey_gpu.register_app(app)
 
 MAX_IMAGE_SIZE = (768, 768)
 
@@ -35,28 +36,29 @@ class PipelineInfo(BaseModel):
 @app.post("/deforum/")
 @gooey_gpu.endpoint
 def deforum(pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs):
-    root = _load_deforum(pipeline)
-
-    args = deforum_script.DeforumArgs(root=root, batch_name=str(uuid.uuid1()))
+    # init args
+    args = deforum_script.DeforumArgs(batch_name=str(uuid.uuid1()))
+    args.seed = pipeline.seed
+    if pipeline.scheduler:
+        args.sampler = pipeline.scheduler
+    anim_args = deforum_script.DeforumAnimArgs()
+    for k, v in inputs.dict().items():
+        setattr(anim_args, k, v)
     try:
-        args.seed = pipeline.seed
-        if pipeline.scheduler:
-            args.sampler = pipeline.scheduler
-
-        anim_args = deforum_script.DeforumAnimArgs()
-        for k, v in inputs.dict().items():
-            setattr(anim_args, k, v)
-
-        with gooey_gpu.use_gpu(root.model):
-            deforum_script.run(root, args, anim_args)
-
+        # run inference
+        args, anim_args = gooey_gpu.run_in_gpu(
+            app=app,
+            fn=_deforum,
+            kwargs=dict(pipeline=pipeline, args=args, anim_args=anim_args),
+        )
+        # generate video
         vid_path = deforum_script.create_video(args, anim_args)
         with open(vid_path, "rb") as f:
             vid_bytes = f.read()
-
     finally:
+        # cleanup
         shutil.rmtree(args.outdir, ignore_errors=True)
-
+    # upload videos
     for url in pipeline.upload_urls:
         r = requests.put(
             url,
@@ -65,6 +67,13 @@ def deforum(pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs):
         )
         r.raise_for_status()
         return
+
+
+def _deforum(pipeline: PipelineInfo, args, anim_args):
+    root = _load_deforum(pipeline)
+    with gooey_gpu.use_models(root.model):
+        deforum_script.run(root, args, anim_args)
+    return args, anim_args
 
 
 _deforum_cache = {}
@@ -77,8 +86,7 @@ def _load_deforum(pipeline):
         root = deforum_script.Root()
         root.map_location = gooey_gpu.DEVICE_ID
         root.model_checkpoint = pipeline.model_id
-        with gooey_gpu.use_gpu():
-            deforum_script.setup(root)
+        deforum_script.setup(root)
         _deforum_cache[pipeline.model_id] = root
     return root
 
@@ -174,18 +182,25 @@ def instruct_pix2pix(pipeline: PipelineInfo, inputs: InstructPix2PixInputs):
     )
 
 
-def predict(
-    pipeline: PipelineInfo,
-    inputs: DiffusersInputs,
-    pipe_cls,
-    **kwargs,
-):
+def predict(pipeline: PipelineInfo, inputs: DiffusersInputs, pipe_cls, **kwargs):
     inputs_dict = inputs.dict()
     inputs_dict.update(kwargs)
+    output_images = gooey_gpu.run_in_gpu(
+        app=app,
+        fn=_predict,
+        kwargs=dict(
+            pipeline=pipeline,
+            inputs_dict=inputs_dict,
+            pipe_cls=pipe_cls,
+        ),
+    )
+    gooey_gpu.upload_images(output_images, pipeline.upload_urls)
 
+
+def _predict(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
     pipe = load_pipeline(pipeline, pipe_cls)
 
-    with gooey_gpu.use_gpu(pipe), torch.inference_mode():
+    with gooey_gpu.use_models(pipe), torch.inference_mode():
         _remove_safety_checker(pipe)
         pipe.enable_xformers_memory_efficient_attention()
 
@@ -194,31 +209,28 @@ def predict(
 
         output_images = output.images
 
-    gooey_gpu.upload_images(output_images, pipeline.upload_urls)
+    return output_images
 
 
-pipes_cache = defaultdict(dict)
-schedulers_cache = defaultdict(dict)
+_pipes_cache = defaultdict(dict)
+_schedulers_cache = defaultdict(dict)
 
 
 def load_pipeline(
     pipeline: PipelineInfo,
     pipe_cls,
 ):
-    pipes = pipes_cache[pipe_cls.__name__]
+    pipes = _pipes_cache[pipe_cls.__name__]
 
     try:
         pipe = pipes[pipeline.model_id]
     except KeyError:
-        with gooey_gpu.use_gpu():
-            pipe = pipe_cls.from_pretrained(
-                pipeline.model_id, torch_dtype=torch.float16
-            )
-            pipes[pipeline.model_id] = pipe
-            update_schedulers(pipeline.model_id, pipe)
+        pipe = pipe_cls.from_pretrained(pipeline.model_id, torch_dtype=torch.float16)
+        pipes[pipeline.model_id] = pipe
+        update_schedulers(pipeline.model_id, pipe)
 
     try:
-        pipe.schduler = schedulers_cache[pipeline.model_id][pipeline.scheduler]
+        pipe.schduler = _schedulers_cache[pipeline.model_id][pipeline.scheduler]
     except KeyError:
         raise ValueError(
             f"Incompatible scheduler `{pipeline.scheduler}` for `{pipeline.model_id}`"
@@ -235,7 +247,7 @@ def update_schedulers(model_id: str, pipe: DiffusionPipeline):
         except ImportError:
             traceback.print_exc()
             continue
-    schedulers_cache[model_id] = schedulers
+    _schedulers_cache[model_id] = schedulers
 
 
 def _remove_safety_checker(pipe):

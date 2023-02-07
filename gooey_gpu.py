@@ -1,6 +1,7 @@
 import contextlib
 import gc
 import io
+import multiprocessing
 import os
 import threading
 import traceback
@@ -15,13 +16,15 @@ import redis
 import requests
 import sentry_sdk
 import torch
+from fastapi import FastAPI
 from redis.exceptions import LockError
 from redis.lock import Lock
 from starlette.responses import JSONResponse
 
 DEVICE_ID = os.environ.get("DEVICE_ID", "cuda:0")
-REDIS_HOST = os.environ.get("REDIS_HOST")
-SENTRY_DSN = os.environ.get("SENTRY_DSN")
+REDIS_HOST = os.environ.get("REDIS_HOST", "").strip()
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "").strip()
+MAX_WORKERS = int(os.environ.get("MAX_WORKERS", "1"))
 
 
 if SENTRY_DSN:
@@ -36,6 +39,20 @@ if SENTRY_DSN:
     print("Sentry error tracking enabled.")
 
 
+def register_app(app: FastAPI):
+    if MAX_WORKERS <= 1:
+        return
+
+    @app.on_event("startup")
+    def on_startup():
+        multiprocessing.set_start_method("spawn")
+        app.state.pool = multiprocessing.Pool(MAX_WORKERS)
+
+    @app.on_event("shutdown")
+    def on_shutdown():
+        app.state.pool.terminate()
+
+
 def endpoint(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -43,18 +60,10 @@ def endpoint(fn):
         print(f"---> {fn.__name__}: {args!r} {kwargs!r}")
         try:
             response = fn(*args, **kwargs)
+        except GpuException as e:
+            return e.response
         except Exception as e:
-            traceback.print_exc()
-            sentry_sdk.capture_exception(e)
-            return JSONResponse(
-                {
-                    "type": type(e).__name__,
-                    "str": str(e)[:5000],
-                    "repr": repr(e)[:5000],
-                    "format_exc": traceback.format_exc()[:5000],
-                },
-                status_code=500,
-            )
+            return _response_for_exc(e)
         finally:
             # just for good measure - https://pytorch.org/docs/stable/notes/faq.html#my-out-of-memory-exception-handler-can-t-allocate-memory
             gc.collect()
@@ -97,25 +106,61 @@ else:
 
 
 @contextlib.contextmanager
-def use_gpu(*models):
-    s = time()
-    with gpu_lock:
-        print(f"⚡️ {DEVICE_ID} acquired in {time() - s:.3f}s")
-        s = time()
-        # move to gpu
+def use_models(*models):
+    # move to gpu
+    for model in models:
+        model.to(DEVICE_ID)
+    try:
+        # run context manager
+        yield
+    finally:
+        # move to cpu
         for model in models:
-            model.to(DEVICE_ID)
-        try:
-            # run context manager
-            yield
-        finally:
-            # move to cpu
-            for model in models:
-                model.to("cpu")
-            # free memory
-            gc.collect()
-            torch.cuda.empty_cache()
-            print(f"⚡️ {DEVICE_ID} released in {time() - s:.3f}s")
+            model.to("cpu")
+        # free memory
+        gc.collect()
+        torch.cuda.empty_cache()
+
+
+def run_in_gpu(*, app: FastAPI, fn, args=None, kwargs=None):
+    if args is None:
+        args = []
+    if kwargs is None:
+        kwargs = {}
+    s = time()
+    print(f"⚡️ [{os.getpid()}] acquired {DEVICE_ID}")
+    try:
+        if MAX_WORKERS > 1:
+            return app.state.pool.apply(fn, args, kwargs)
+        else:
+            with gpu_lock:
+                return fn(*args, **kwargs)
+    except Exception as e:
+        raise GpuException(_response_for_exc(e))
+    finally:
+        # free memory
+        gc.collect()
+        torch.cuda.empty_cache()
+        print(f"⚡️ [{os.getpid()}] released {DEVICE_ID} in {time() - s:.3f}s")
+
+
+def _response_for_exc(e):
+    traceback.print_exc()
+    sentry_sdk.capture_exception(e)
+    return JSONResponse(
+        {
+            "type": type(e).__name__,
+            "str": str(e)[:5000],
+            "repr": repr(e)[:5000],
+            "format_exc": traceback.format_exc()[:5000],
+        },
+        status_code=500,
+    )
+
+
+class GpuException(Exception):
+    def __init__(self, response):
+        self.response = response
 
 
 def download_images(
