@@ -201,7 +201,7 @@ def _predict(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
     pipe = load_pipeline(pipeline, pipe_cls)
 
     with gooey_gpu.use_models(pipe), torch.inference_mode():
-        _remove_safety_checker(pipe)
+        _replace_safety_checker(pipe)
         pipe.enable_xformers_memory_efficient_attention()
 
         generator = torch.Generator("cuda").manual_seed(pipeline.seed)
@@ -250,14 +250,19 @@ def update_schedulers(model_id: str, pipe: DiffusionPipeline):
     _schedulers_cache[model_id] = schedulers
 
 
-def _remove_safety_checker(pipe):
-    """If there's an nsfw filter, replace it with a dummy"""
+def _replace_safety_checker(pipe):
+    def _safety_checker(images, clip_input):
+        # images, has_nsfw_concepts = original(images=images, clip_input=clip_input)
+        # if has_nsfw_concepts:
+        #     raise ValueError(
+        #         "Potential NSFW content was detected in one or more images. "
+        #         "Try again with a different Prompt and/or Regenerate."
+        #     )
+        return images, False
+
     try:
-        if pipe.safety_checker:
-            pipe.safety_checker = _dummy
+        original = pipe.safety_checker
+        if original:
+            pipe.safety_checker = _safety_checker
     except AttributeError:
         pass
-
-
-def _dummy(images, **kwargs):
-    return images, False
