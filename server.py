@@ -15,6 +15,7 @@ from diffusers import (
     StableDiffusionUpscalePipeline,
 )
 from fastapi import FastAPI
+from lavis.models import load_model_and_preprocess
 from pydantic import BaseModel
 
 import deforum_script
@@ -27,10 +28,91 @@ MAX_IMAGE_SIZE = (768, 768)
 
 
 class PipelineInfo(BaseModel):
-    upload_urls: typing.List[str]
+    upload_urls: typing.List[str] = []
     model_id: str
     scheduler: str = None
-    seed: int
+    seed: int = 42
+
+
+class VQAInput(BaseModel):
+    image: typing.List[str]
+    question: typing.List[str]
+
+    # https://github.com/salesforce/LAVIS/blob/7aa83e93003dade66f7f7eaba253b10c459b012d/lavis/models/blip_models/blip_vqa.py#L162
+    num_beams: int = 3
+    inference_method: str = "generate"
+    max_len: int = 10
+    min_len: int = 1
+    num_ans_candidates: int = 128
+
+
+@app.post("/vqa/")
+@gooey_gpu.endpoint
+def vqa(pipeline: PipelineInfo, inputs: VQAInput):
+    # load model
+    model_id = pipeline.model_id.split("/")
+    model, vis_processors, txt_processors = _load_lavis_model(*model_id)
+    # get inputs
+    inputs_kwargs = inputs.dict()
+    image = gooey_gpu.download_images(inputs_kwargs.pop("image"), MAX_IMAGE_SIZE)
+    question = inputs_kwargs.pop("question")
+    # do inference
+    with gooey_gpu.use_models(model):
+        # preprocess the image
+        # vis_processors stores image transforms for "train" and "eval" (validation / testing / inference)
+        image = torch.stack([vis_processors["eval"](im) for im in image]).to(
+            gooey_gpu.DEVICE_ID
+        )
+        question = [txt_processors["eval"](q) for q in question]
+        # generate answerss
+        return model.predict_answers(
+            samples={"image": image, "text_input": question}, **inputs_kwargs
+        )
+        # ['singapore']
+
+
+class ImageCaptioningInput(BaseModel):
+    image: typing.List[str]
+
+    # https://github.com/salesforce/LAVIS/blob/7aa83e93003dade66f7f7eaba253b10c459b012d/lavis/models/blip_models/blip_caption.py#L136
+    num_beams = 3
+    max_length = 30
+    min_length = 10
+    repetition_penalty = 1.0
+    num_captions = 1
+
+
+@app.post("/image-captioning/")
+@gooey_gpu.endpoint
+def image_captioning(pipeline: PipelineInfo, inputs: ImageCaptioningInput):
+    # load model
+    model_id = pipeline.model_id.split("/")
+    model, vis_processors, txt_processors = _load_lavis_model(*model_id)
+    # get inputs
+    inputs_kwargs = inputs.dict()
+    image = gooey_gpu.download_images(inputs_kwargs.pop("image"), MAX_IMAGE_SIZE)
+    # do inference
+    with gooey_gpu.use_models(model):
+        # preprocess the image
+        # vis_processors stores image transforms for "train" and "eval" (validation / testing / inference)
+        image = torch.stack([vis_processors["eval"](im) for im in image]).to(
+            gooey_gpu.DEVICE_ID
+        )
+        # generate caption
+        return model.generate(samples={"image": image}, **inputs_kwargs)
+        # ['a large fountain spewing water into the air']
+
+
+_lavis_cache = {}
+
+
+def _load_lavis_model(name, model_type):
+    try:
+        ret = _lavis_cache[(name, model_type)]
+    except KeyError:
+        ret = load_model_and_preprocess(name, model_type, is_eval=True)
+        _lavis_cache[(name, model_type)] = ret
+    return ret
 
 
 @app.post("/deforum/")

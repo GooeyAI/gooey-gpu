@@ -10,7 +10,8 @@ docker run -it --rm \
   --name $NAME \
   -v $PWD/checkpoints:/src/checkpoints \
   -v $HOME/.cache/huggingface:/root/.cache/huggingface \
-  -e MAX_WORKERS=2 \
+  -v $HOME/.cache/torch:/root/.cache/torch \
+  -e MAX_WORKERS=1 \
   -p 6012:5000 \
   --gpus all \
   $NAME

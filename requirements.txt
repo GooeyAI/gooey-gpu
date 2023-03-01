@@ -16,9 +16,9 @@ xformers==0.0.16
 triton==2.0.0.dev20221202
 
 ## huggingface diffusers
-diffusers ~= 0.12.0
+diffusers ~= 0.13.1
 transformers ~= 4.25.1
-accelerate ~= 0.15.0
+accelerate ~= 0.16.0
 sentencepiece ~= 0.1.97
 
 ## google colab general
@@ -39,10 +39,13 @@ ftfy ~= 6.1.1
 jsonmerge ~= 1.9.0
 matplotlib ~= 3.6.3
 resize-right ~= 0.0.2
-timm ~= 0.6.12
+timm
 torchdiffeq ~= 0.2.3
 scikit-learn ~= 1.2.1
 torchsde ~= 0.2.5
 open-clip-torch ~= 2.10.1
 numpngw ~= 0.1.2
 ipython ~= 8.9.0
+
+## lavis
+salesforce-lavis ~= 1.0.0
