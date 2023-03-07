@@ -4,20 +4,24 @@ Docker container which provides inference endpoints for the following -
 
 Endpoint | Models
 -- | --
-`/text2img/` |  `StableDiffusionPipeline` on huggingface
-`/img2img/`  |  `StableDiffusionImg2ImgPipeline` on huggingface
-`/inpaint/`  |  `StableDiffusionInpaintPipeline` on huggingface
-`/upscale/`  |  `StableDiffusionUpscalePipeline` on huggingface
-`/instruct_pix2pix/` |  `StableDiffusionInstructPix2PixPipeline` on huggingface
+`/text2img/` |  `StableDiffusionPipeline` [models](https://huggingface.co/models?sort=downloads&search=diffusion)
+`/img2img/`  |  `StableDiffusionImg2ImgPipeline` [models](https://huggingface.co/models?sort=downloads&search=diffusion)
+`/inpaint/`  |  `StableDiffusionInpaintPipeline` [models](https://huggingface.co/models?sort=downloads&search=inpainting)
+`/upscale/`  |  `StableDiffusionUpscalePipeline` [models](https://huggingface.co/models?sort=downloads&search=upscaler)
+`/instruct_pix2pix/` |  [`StableDiffusionInstructPix2PixPipeline`](https://huggingface.co/timbrooks/instruct-pix2pix)
 `/deforum/` | [deforum-stable-diffusion](https://github.com/deforum-art/deforum-stable-diffusion)
 `/image-captioning/` | [LAVIS image captioning](https://github.com/salesforce/LAVIS/#image-captioning)
 `/vqa/` | [LAVIS visual Q&A](https://github.com/salesforce/LAVIS/#visual-question-answering-vqa)
+`/controlnet/`  | [`StableDiffusionControlNetPipeline`](https://huggingface.co/docs/diffusers/main/en/api/pipelines/stable_diffusion/controlnet) using [`ControlNetModel`](https://huggingface.co/lllyasviel?q=controlnet)
 
 ---
 
-Models are automatically offloaded to cpu ram after inference. 
-
-This allows you to run this container with an idle GPU usage of just ~2GB
+Features: 
+ - Models are automatically offloaded to cpu ram after inference. This allows you to run this container with an idle GPU usage of just ~2GB
+ - Error handling via sentry
+ - Multiple workers support
+ - Uploads images to given upload url via POST, useful for directly uploading to google cloud storage etc.
+ - Error pass-through to the clients, via HTTP 500 response body
 
 ---
 
