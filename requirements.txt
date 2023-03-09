@@ -16,8 +16,8 @@ xformers==0.0.16
 triton==2.0.0.dev20221202
 
 ## huggingface diffusers
-diffusers ~= 0.13.1
-transformers ~= 4.25.1
+diffusers ~= 0.14.0
+transformers ~= 4.26.1
 accelerate ~= 0.16.0
 sentencepiece ~= 0.1.97
 
@@ -48,4 +48,7 @@ numpngw ~= 0.1.2
 ipython ~= 8.9.0
 
 ## lavis
-salesforce-lavis ~= 1.0.0
+salesforce-lavis ~= 1.0.2
+
+## controlnet
+controlnet_aux ~= 0.0.1
