@@ -1,5 +1,5 @@
 import traceback
-from collections import defaultdict
+from functools import lru_cache
 
 import torch
 from diffusers import (
@@ -125,73 +125,43 @@ def predict(
 
 
 def _predict(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
-    pipe = load_pipeline(pipeline, pipe_cls)
-
+    # get diffusion pipe
+    pipe = load_diffusion_pipeline(pipeline.model_id)
+    components = pipe.components
+    # load scheduler
+    components["scheduler"] = get_scheduler(pipeline)
+    # load controlnet
+    if isinstance(pipeline, ControlNetPipelineInfo):
+        components["controlnet"] = load_controlnet_model(pipeline.controlnet_model_id)
+    # get correct pipe cls
+    pipe = pipe_cls(**components)
+    # gpu inference mode
     with gooey_gpu.use_models(pipe), torch.inference_mode():
+        # custom safety checker impl
         safety_checker_wrapper(pipe, disabled=pipeline.disable_safety_checker)
+        # enable optimizations
         pipe.enable_xformers_memory_efficient_attention()
-
+        # set seed
         generator = torch.Generator("cuda").manual_seed(pipeline.seed)
+        # generate output
         output = pipe(**inputs_dict, generator=generator)
-
         output_images = output.images
-
     return output_images
 
 
-_pipes_cache = defaultdict(dict)
-_schedulers_cache = defaultdict(dict)
-
-
-def load_pipeline(
-    pipeline: PipelineInfo,
-    pipe_cls,
-):
-    pipes = _pipes_cache[pipe_cls.__name__]
-
-    if isinstance(pipeline, ControlNetPipelineInfo):
-        controlnet = _load_controlnet_model(pipeline.controlnet_model_id)
-    else:
-        controlnet = None
-
-    try:
-        pipe = pipes[pipeline.model_id]
-        pipe.controlnet = controlnet
-    except KeyError:
-        if controlnet:
-            pipe = pipe_cls.from_pretrained(
-                pipeline.model_id,
-                controlnet=controlnet,
-                torch_dtype=torch.float16,
-            )
-        else:
-            pipe = pipe_cls.from_pretrained(
-                pipeline.model_id,
-                torch_dtype=torch.float16,
-            )
-        pipes[pipeline.model_id] = pipe
-        update_schedulers(pipeline.model_id, pipe)
-
-    try:
-        pipe.scheduler = _schedulers_cache[pipeline.model_id][pipeline.scheduler]
-    except KeyError:
-        raise ValueError(
-            f"Incompatible scheduler `{pipeline.scheduler}` for `{pipeline.model_id}`"
-        )
-
+@lru_cache(maxsize=10)
+def load_diffusion_pipeline(model_id: str) -> StableDiffusionPipeline:
+    pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+    update_schedulers(model_id, pipe)
     return pipe
 
 
-_controlnet_cache = {}
+@lru_cache(maxsize=10)
+def load_controlnet_model(model_id: str) -> ControlNetModel:
+    return ControlNetModel.from_pretrained(model_id, torch_dtype=torch.float16)
 
 
-def _load_controlnet_model(model_id: str) -> ControlNetModel:
-    try:
-        model = _controlnet_cache[model_id]
-    except KeyError:
-        model = ControlNetModel.from_pretrained(model_id, torch_dtype=torch.float16)
-        _controlnet_cache[model_id] = model
-    return model
+_schedulers = {}
 
 
 def update_schedulers(model_id: str, pipe: DiffusionPipeline):
@@ -202,7 +172,16 @@ def update_schedulers(model_id: str, pipe: DiffusionPipeline):
         except ImportError:
             traceback.print_exc()
             continue
-    _schedulers_cache[model_id] = schedulers
+    _schedulers[model_id] = schedulers
+
+
+def get_scheduler(pipeline):
+    try:
+        return _schedulers[pipeline.model_id][pipeline.scheduler]
+    except KeyError:
+        raise ValueError(
+            f"Incompatible scheduler `{pipeline.scheduler}` for `{pipeline.model_id}`"
+        )
 
 
 def safety_checker_wrapper(pipe, disabled: bool):
