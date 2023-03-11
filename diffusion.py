@@ -10,6 +10,7 @@ from diffusers import (
     StableDiffusionInpaintPipeline,
     StableDiffusionUpscalePipeline,
     ControlNetModel,
+    StableDiffusionControlNetPipeline,
 )
 from fastapi import APIRouter
 from starlette.requests import Request
@@ -125,16 +126,16 @@ def predict(
 
 
 def _predict(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
-    # get diffusion pipe
-    pipe = load_diffusion_pipeline(pipeline.model_id)
-    components = pipe.components
-    # load scheduler
-    components["scheduler"] = get_scheduler(pipeline)
     # load controlnet
+    extra_components = {}
     if isinstance(pipeline, ControlNetPipelineInfo):
-        components["controlnet"] = load_controlnet_model(pipeline.controlnet_model_id)
-    # get correct pipe cls
-    pipe = pipe_cls(**components)
+        extra_components["controlnet"] = load_controlnet_model(
+            pipeline.controlnet_model_id
+        )
+    # load pipe
+    pipe = load_pipe(pipe_cls, pipeline.model_id, extra_components)
+    # load scheduler
+    pipe.scheduler = get_scheduler(pipeline)
     # gpu inference mode
     with gooey_gpu.use_models(pipe), torch.inference_mode():
         # custom safety checker impl
@@ -149,9 +150,26 @@ def _predict(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
     return output_images
 
 
+def load_pipe(pipe_cls, model_id: str, extra_components: dict):
+    if issubclass(
+        pipe_cls,
+        (
+            StableDiffusionPipeline,
+            StableDiffusionImg2ImgPipeline,
+            StableDiffusionInpaintPipeline,
+            StableDiffusionControlNetPipeline,
+        ),
+    ):
+        base_cls = StableDiffusionPipeline
+    else:
+        base_cls = pipe_cls
+    base_pipe = _load_pipe_cached(base_cls, model_id)
+    return pipe_cls(**base_pipe.components, **extra_components)
+
+
 @lru_cache(maxsize=10)
-def load_diffusion_pipeline(model_id: str) -> StableDiffusionPipeline:
-    pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+def _load_pipe_cached(pipe_cls, model_id: str):
+    pipe = pipe_cls.from_pretrained(model_id, torch_dtype=torch.float16)
     update_schedulers(model_id, pipe)
     return pipe
 
@@ -185,15 +203,16 @@ def get_scheduler(pipeline):
 
 
 def safety_checker_wrapper(pipe, disabled: bool):
-    def _safety_checker(images, clip_input):
-        if disabled:
-            return images, False
-        images, has_nsfw_concepts = original(images=images, clip_input=clip_input)
-        if has_nsfw_concepts:
+    def _safety_checker(clip_input, images):
+        has_nsfw_concepts = [False] * len(images)
+        if not disabled:
+            images, has_nsfw_concepts = original(images=images, clip_input=clip_input)
+        if any(has_nsfw_concepts):
             raise ValueError(
                 "Potential NSFW content was detected in one or more images. "
                 "Try again with a different Prompt and/or Regenerate."
             )
+        return images, has_nsfw_concepts
 
     try:
         original = pipe.safety_checker
