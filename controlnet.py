@@ -8,6 +8,7 @@ from diffusers import (
     StableDiffusionControlNetPipeline,
 )
 from fastapi import APIRouter
+from pydantic.tools import lru_cache
 from starlette.requests import Request
 
 import gooey_gpu
@@ -52,7 +53,7 @@ def canny(im_pil):
 
 
 def depth(im_pil):
-    depth_estimator = transformers.pipeline("depth-estimation")
+    depth_estimator = load_depth_estimator()
     image = depth_estimator(im_pil)["depth"]
     image = np.array(image)
     image = image[:, :, None]
@@ -60,33 +61,53 @@ def depth(im_pil):
     return PIL.Image.fromarray(image)
 
 
+@lru_cache
+def load_depth_estimator():
+    return transformers.pipeline("depth-estimation", device=gooey_gpu.DEVICE_ID)
+
+
 def hed(im_pil):
-    model = controlnet_aux.HEDdetector.from_pretrained("lllyasviel/ControlNet")
+    model = load_hed()
     return model(im_pil)
+
+
+@lru_cache
+def load_hed():
+    return controlnet_aux.HEDdetector.from_pretrained("lllyasviel/ControlNet")
 
 
 def scribble(im_pil):
-    model = controlnet_aux.HEDdetector.from_pretrained("lllyasviel/ControlNet")
+    model = load_controlnet()
     return model(im_pil, scribble=True)
 
 
+@lru_cache
+def load_controlnet():
+    return controlnet_aux.HEDdetector.from_pretrained("lllyasviel/ControlNet")
+
+
 def mlsd(im_pil):
-    model = controlnet_aux.MLSDdetector.from_pretrained("lllyasviel/ControlNet")
+    model = load_mlsd()
     return model(im_pil)
+
+
+@lru_cache
+def load_mlsd():
+    return controlnet_aux.MLSDdetector.from_pretrained("lllyasviel/ControlNet")
 
 
 def openpose(im_pil):
-    model = controlnet_aux.OpenposeDetector.from_pretrained("lllyasviel/ControlNet")
+    model = load_openpose()
     return model(im_pil)
 
 
+@lru_cache
+def load_openpose():
+    return controlnet_aux.OpenposeDetector.from_pretrained("lllyasviel/ControlNet")
+
+
 def seg(im_pil):
-    image_processor = transformers.AutoImageProcessor.from_pretrained(
-        "openmmlab/upernet-convnext-small"
-    )
-    image_segmentor = transformers.UperNetForSemanticSegmentation.from_pretrained(
-        "openmmlab/upernet-convnext-small"
-    )
+    image_processor, image_segmentor = load_seg()
 
     pixel_values = image_processor(im_pil, return_tensors="pt").pixel_values
 
@@ -111,10 +132,19 @@ def seg(im_pil):
     return PIL.Image.fromarray(color_seg)
 
 
-def normal(im_pil):
-    depth_estimator = transformers.pipeline(
-        "depth-estimation", model="Intel/dpt-hybrid-midas"
+@lru_cache
+def load_seg():
+    image_processor = transformers.AutoImageProcessor.from_pretrained(
+        "openmmlab/upernet-convnext-small"
     )
+    image_segmentor = transformers.UperNetForSemanticSegmentation.from_pretrained(
+        "openmmlab/upernet-convnext-small"
+    )
+    return image_processor, image_segmentor
+
+
+def normal(im_pil):
+    depth_estimator = load_normal()
 
     image = depth_estimator(im_pil)["predicted_depth"][0]
 
@@ -138,6 +168,13 @@ def normal(im_pil):
     image /= np.sum(image**2.0, axis=2, keepdims=True) ** 0.5
     image = (image * 127.5 + 127.5).clip(0, 255).astype(np.uint8)
     return PIL.Image.fromarray(image)
+
+
+@lru_cache
+def load_normal():
+    return transformers.pipeline(
+        "depth-estimation", model="Intel/dpt-hybrid-midas", device=gooey_gpu.DEVICE_ID
+    )
 
 
 CONTROLNET_PREPROCESSORS = {

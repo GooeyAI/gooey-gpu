@@ -167,14 +167,14 @@ def load_pipe(pipe_cls, model_id: str, extra_components: dict):
     return pipe_cls(**base_pipe.components, **extra_components)
 
 
-@lru_cache(maxsize=10)
+@lru_cache
 def _load_pipe_cached(pipe_cls, model_id: str):
     pipe = pipe_cls.from_pretrained(model_id, torch_dtype=torch.float16)
     update_schedulers(model_id, pipe)
     return pipe
 
 
-@lru_cache(maxsize=10)
+@lru_cache
 def load_controlnet_model(model_id: str) -> ControlNetModel:
     return ControlNetModel.from_pretrained(model_id, torch_dtype=torch.float16)
 

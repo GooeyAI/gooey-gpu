@@ -116,7 +116,7 @@ def use_models(*models):
     finally:
         # move to cpu
         for model in models:
-            model.to("cpu")
+            model.to("cpu", silence_dtype_warnings=True)
         # free memory
         gc.collect()
         torch.cuda.empty_cache()
