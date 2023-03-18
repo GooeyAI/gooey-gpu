@@ -1,6 +1,7 @@
 import contextlib
 import gc
 import io
+import math
 import multiprocessing
 import os
 import threading
@@ -188,7 +189,7 @@ def download_image(
 
 
 def resize_img_scale(im_pil: PIL.Image.Image, max_size: (int, int)) -> PIL.Image.Image:
-    factor = (max_size[0] * max_size[1]) / (im_pil.size[0] * im_pil.size[1])
+    factor = math.sqrt((max_size[0] * max_size[1]) / (im_pil.size[0] * im_pil.size[1]))
     if 1 - factor > 1e-2:
         im_pil = PIL.ImageOps.scale(im_pil, factor)
         print(f"Resize image by {factor:.3f}x = {im_pil.size}")
