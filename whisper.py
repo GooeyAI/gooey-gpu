@@ -27,7 +27,9 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> list[dict]:
 @gooey_gpu.gpu_task
 def run_whisper(audio: bytes, model_id: str):
     pipe = load_pipe(model_id)
-    with gooey_gpu.use_models(pipe.model):
+    with gooey_gpu.use_models(
+        pipe.model, pipe.model.get_encoder(), pipe.model.get_decoder()
+    ):
         pipe.device = torch.device(gooey_gpu.DEVICE_ID)
         prediction = pipe(
             audio,
