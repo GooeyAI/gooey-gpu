@@ -27,11 +27,7 @@ def deforum(
         setattr(anim_args, k, v)
     try:
         # run inference
-        args, anim_args = gooey_gpu.run_in_gpu(
-            app=request.app,
-            fn=run_deforum,
-            kwargs=dict(pipeline=pipeline, args=args, anim_args=anim_args),
-        )
+        args, anim_args = run_deforum(pipeline=pipeline, args=args, anim_args=anim_args)
         # generate video
         vid_path = deforum_script.create_video(args, anim_args)
         with open(vid_path, "rb") as f:
@@ -50,7 +46,8 @@ def deforum(
         return
 
 
-def run_deforum(pipeline: PipelineInfo, args, anim_args):
+@gooey_gpu.gpu_task
+def run_deforum(*, pipeline: PipelineInfo, args, anim_args):
     root = load_deforum(pipeline)
     with gooey_gpu.use_models(root.model):
         deforum_script.run(root, args, anim_args)

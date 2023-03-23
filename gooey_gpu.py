@@ -2,13 +2,13 @@ import contextlib
 import gc
 import io
 import math
-import multiprocessing
 import os
 import threading
 import traceback
 import typing
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
+from multiprocessing.pool import Pool
 from time import time
 
 import PIL.Image
@@ -17,9 +17,11 @@ import redis
 import requests
 import sentry_sdk
 import torch
-from fastapi import FastAPI
+from accelerate import cpu_offload_with_hook
+from diffusers import ConfigMixin
 from redis.exceptions import LockError
 from redis.lock import Lock
+from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 DEVICE_ID = os.environ.get("DEVICE_ID", "cuda:0")
@@ -40,20 +42,6 @@ if SENTRY_DSN:
     print("Sentry error tracking enabled.")
 
 
-def register_app(app: FastAPI):
-    if MAX_WORKERS <= 1:
-        return
-
-    @app.on_event("startup")
-    def on_startup():
-        multiprocessing.set_start_method("spawn")
-        app.state.pool = multiprocessing.Pool(MAX_WORKERS)
-
-    @app.on_event("shutdown")
-    def on_shutdown():
-        app.state.pool.terminate()
-
-
 def endpoint(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -61,7 +49,7 @@ def endpoint(fn):
         print(f"---> {fn.__name__}: {args!r} {kwargs!r}")
         try:
             response = fn(*args, **kwargs)
-        except GpuException as e:
+        except GpuFuncException as e:
             return e.response
         except Exception as e:
             return _response_for_exc(e)
@@ -107,42 +95,86 @@ else:
 
 
 @contextlib.contextmanager
-def use_models(*models):
-    # move to gpu
+def use_models(*models: typing.Union[torch.nn.Module, ConfigMixin]):
     for model in models:
-        model.to(DEVICE_ID)
+        register_cpu_offload(model)
     try:
         # run context manager
         yield
     finally:
         # move to cpu
         for model in models:
-            model.to("cpu", silence_dtype_warnings=True)
+            register_cpu_offload(model, offload=True)
         # free memory
         gc.collect()
         torch.cuda.empty_cache()
 
 
-def run_in_gpu(*, app: FastAPI, fn, args=None, kwargs=None):
-    if args is None:
-        args = []
-    if kwargs is None:
-        kwargs = {}
-    s = time()
-    print(f"⚡️ [{os.getpid()}] acquired {DEVICE_ID}")
+def register_cpu_offload(model: torch.nn.Module | ConfigMixin, offload: bool = False):
+    if isinstance(model, torch.nn.Module):
+        module_register_cpu_offload(model, offload)
+    elif isinstance(model, ConfigMixin):
+        module_names, _, _ = model.extract_init_dict(dict(model.config))
+        for name in module_names.keys():
+            module = getattr(model, name)
+            if isinstance(module, torch.nn.Module):
+                module_register_cpu_offload(module, offload)
+    else:
+        raise ValueError(f"Not sure how to offload a `{type(model)}`")
+
+
+_saved_hooks = {}
+
+
+def module_register_cpu_offload(module: torch.nn.Module, offload: bool = False):
     try:
-        if MAX_WORKERS > 1:
-            return app.state.pool.apply(fn, args, kwargs)
-        else:
-            with gpu_lock:
-                return fn(*args, **kwargs)
+        hook = _saved_hooks[module]
+    except KeyError:
+        module.to("cpu")
+        _, hook = cpu_offload_with_hook(module, DEVICE_ID)
+        _saved_hooks[module] = hook
+    if offload:
+        hook.offload()
+
+
+P = typing.ParamSpec("P")
+R = typing.TypeVar("R")
+
+
+class Shared:
+    task_registry: dict[str, typing.Callable] = {}
+    gpu_pool: Pool
+
+
+def gpu_task(fn: typing.Callable[P, R]) -> typing.Callable[P, R]:
+    task_id = f"{fn.__module__}.{fn.__qualname__}"
+    Shared.task_registry[task_id] = fn
+    print(f"✅ [{os.getpid()}] [{task_id}]")
+
+    @wraps(fn)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        return Shared.gpu_pool.apply(gpu_worker, [task_id, time(), args, kwargs])
+
+    return wrapper
+
+
+def gpu_worker(task_id, s, args, kwargs):
+    fn = Shared.task_registry[task_id]
+    print(f"⚡️ [{os.getpid()}] [{task_id}] acquired {DEVICE_ID} in {time() - s:.3f}s")
+    s = time()
+    try:
+        # run the func
+        return fn(*args, **kwargs)
     except Exception as e:
-        raise GpuException(_response_for_exc(e))
+        # avoids piping exception stacktraces, which might cause memory leaks - https://pytorch.org/docs/stable/notes/faq.html#my-out-of-memory-exception-handler-can-t-allocate-memory
+        raise GpuFuncException(_response_for_exc(e))
     finally:
         # free memory
         gc.collect()
         torch.cuda.empty_cache()
-        print(f"⚡️ [{os.getpid()}] released {DEVICE_ID} in {time() - s:.3f}s")
+        print(
+            f"⚡️ [[{os.getpid()}] {task_id}]️ released {DEVICE_ID} in {time() - s:.3f}s"
+        )
 
 
 def _response_for_exc(e):
@@ -159,7 +191,7 @@ def _response_for_exc(e):
     )
 
 
-class GpuException(Exception):
+class GpuFuncException(Exception):
     def __init__(self, response):
         self.response = response
 

@@ -34,7 +34,7 @@ app = APIRouter()
 @app.post("/text2img/")
 @gooey_gpu.endpoint
 def text2img(request: Request, pipeline: PipelineInfo, inputs: Text2ImgInputs):
-    return predict(
+    return predict_and_upload(
         request=request,
         pipe_cls=StableDiffusionPipeline,
         pipeline=pipeline,
@@ -45,7 +45,7 @@ def text2img(request: Request, pipeline: PipelineInfo, inputs: Text2ImgInputs):
 @app.post("/img2img/")
 @gooey_gpu.endpoint
 def img2img(request: Request, pipeline: PipelineInfo, inputs: Img2ImgInputs):
-    return predict(
+    return predict_and_upload(
         request=request,
         pipe_cls=StableDiffusionImg2ImgPipeline,
         pipeline=pipeline,
@@ -59,7 +59,7 @@ def img2img(request: Request, pipeline: PipelineInfo, inputs: Img2ImgInputs):
 @app.post("/inpaint/")
 @gooey_gpu.endpoint
 def inpaint(request: Request, pipeline: PipelineInfo, inputs: InpaintInputs):
-    return predict(
+    return predict_and_upload(
         request=request,
         pipe_cls=StableDiffusionInpaintPipeline,
         pipeline=pipeline,
@@ -74,7 +74,7 @@ def inpaint(request: Request, pipeline: PipelineInfo, inputs: InpaintInputs):
 @app.post("/upscale/")
 @gooey_gpu.endpoint
 def upscale(request: Request, pipeline: PipelineInfo, inputs: UpscaleInputs):
-    return predict(
+    return predict_and_upload(
         request=request,
         pipe_cls=StableDiffusionUpscalePipeline,
         pipeline=pipeline,
@@ -90,7 +90,7 @@ def upscale(request: Request, pipeline: PipelineInfo, inputs: UpscaleInputs):
 def instruct_pix2pix(
     request: Request, pipeline: PipelineInfo, inputs: InstructPix2PixInputs
 ):
-    return predict(
+    return predict_and_upload(
         request=request,
         pipe_cls=StableDiffusionInstructPix2PixPipeline,
         pipeline=pipeline,
@@ -101,7 +101,7 @@ def instruct_pix2pix(
     )
 
 
-def predict(
+def predict_and_upload(
     *,
     pipe_cls,
     request: Request,
@@ -113,19 +113,14 @@ def predict(
         inputs_mod = {}
     inputs_dict = inputs.dict()
     inputs_dict.update(inputs_mod)
-    output_images = gooey_gpu.run_in_gpu(
-        app=request.app,
-        fn=_predict,
-        kwargs=dict(
-            pipeline=pipeline,
-            inputs_dict=inputs_dict,
-            pipe_cls=pipe_cls,
-        ),
+    output_images = predict_on_gpu(
+        pipeline=pipeline, inputs_dict=inputs_dict, pipe_cls=pipe_cls
     )
     gooey_gpu.upload_images(output_images, pipeline.upload_urls)
 
 
-def _predict(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
+@gooey_gpu.gpu_task
+def predict_on_gpu(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
     # load controlnet
     extra_components = {}
     if isinstance(pipeline, ControlNetPipelineInfo):

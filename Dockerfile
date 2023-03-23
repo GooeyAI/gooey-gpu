@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
 ENV PATH="/root/.pyenv/shims:/root/.pyenv/bin:$PATH"
 RUN curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash && \
-	pyenv install 3.9 && \
-	pyenv global 3.9
+	pyenv install 3.10 && \
+	pyenv global 3.10
 
 # app dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
