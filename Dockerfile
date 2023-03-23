@@ -44,7 +44,7 @@ RUN echo '' > deforum-stable-diffusion/src/k_diffusion/__init__.py
 
 # app dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install Cython && pip install -r requirements.txt
 
 # copy sources
 COPY . .

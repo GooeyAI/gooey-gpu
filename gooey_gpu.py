@@ -17,6 +17,7 @@ import redis
 import requests
 import sentry_sdk
 import torch
+import transformers
 from accelerate import cpu_offload_with_hook
 from diffusers import ConfigMixin
 from redis.exceptions import LockError
@@ -94,33 +95,43 @@ else:
     gpu_lock = threading.RLock()
 
 
+M = typing.TypeVar("M", bound=torch.nn.Module | ConfigMixin | transformers.Pipeline)
+
+
 @contextlib.contextmanager
-def use_models(*models: typing.Union[torch.nn.Module, ConfigMixin]):
-    for model in models:
-        register_cpu_offload(model)
+def use_models(*models: M):
+    # register models for offloading
+    for obj in models:
+        register_cpu_offload(obj)
     try:
-        # run context manager
+        # run the code that uses the model.
+        # this should automatically move it to gpu when model's forward() is called.
         yield
     finally:
-        # move to cpu
-        for model in models:
-            register_cpu_offload(model, offload=True)
+        # offload to cpu
+        for obj in models:
+            register_cpu_offload(obj, offload=True)
         # free memory
         gc.collect()
         torch.cuda.empty_cache()
 
 
-def register_cpu_offload(model: torch.nn.Module | ConfigMixin, offload: bool = False):
-    if isinstance(model, torch.nn.Module):
-        module_register_cpu_offload(model, offload)
-    elif isinstance(model, ConfigMixin):
-        module_names, _, _ = model.extract_init_dict(dict(model.config))
+def register_cpu_offload(obj: M, offload: bool = False):
+    # pytorch models
+    if isinstance(obj, torch.nn.Module):
+        module_register_cpu_offload(obj, offload)
+    # transformers
+    elif isinstance(obj, transformers.Pipeline):
+        module_register_cpu_offload(obj.model, offload)
+    # diffusers
+    elif isinstance(obj, ConfigMixin):
+        module_names, _, _ = obj.extract_init_dict(dict(obj.config))
         for name in module_names.keys():
-            module = getattr(model, name)
+            module = getattr(obj, name)
             if isinstance(module, torch.nn.Module):
                 module_register_cpu_offload(module, offload)
     else:
-        raise ValueError(f"Not sure how to offload a `{type(model)}`")
+        raise ValueError(f"Not sure how to offload a `{type(obj)}`")
 
 
 _saved_hooks = {}
