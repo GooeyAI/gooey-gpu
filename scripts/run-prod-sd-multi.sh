@@ -2,9 +2,10 @@
 
 set -x
 
-docker build . -t gooey-gpu
-
 NAME=sd-multi
+
+docker build . -t gooey-gpu:$NAME
+
 docker rm -f $NAME
 docker run -d --restart always \
   --name $NAME \
@@ -16,6 +17,6 @@ docker run -d --restart always \
   -e MAX_WORKERS=1 \
   -p 5012:5000 \
   --gpus all \
-  gooey-gpu
+  gooey-gpu:$NAME
 
 docker logs -f $NAME
