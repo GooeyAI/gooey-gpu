@@ -8,6 +8,7 @@ import diffusion
 import gooey_gpu
 import lv
 import nvidia_nemo
+import whisper
 
 app = FastAPI()
 
@@ -16,6 +17,7 @@ app.include_router(diffusion.app)
 app.include_router(deforum.app)
 app.include_router(lv.app)
 app.include_router(controlnet.app)
+app.include_router(whisper.app)
 app.include_router(nvidia_nemo.app)
 
 
