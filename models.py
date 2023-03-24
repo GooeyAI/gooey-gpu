@@ -75,3 +75,24 @@ class ImageCaptioningInput(BaseModel):
     min_length = 10
     repetition_penalty = 1.0
     num_captions = 1
+
+
+class WhisperInputs(BaseModel):
+    audio: str
+    task: typing.Literal["translate", "transcribe"] = "transcribe"
+    language: str = None
+    return_timestamps: bool = False
+
+
+class NemoASRInputs(BaseModel):
+    audio: str
+
+
+class AsrOutputChunk(BaseModel):
+    timestamp: tuple[float, float]
+    text: str
+
+
+class AsrOutput(BaseModel):
+    text: str
+    chunks: list[AsrOutputChunk] = []

@@ -5,21 +5,16 @@ from functools import lru_cache
 import nemo.collections.asr as nemo_asr
 import requests
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 import gooey_gpu
-from models import PipelineInfo
+from models import PipelineInfo, AsrOutput, NemoASRInputs
 
 app = APIRouter()
 
 
-class NemoASRInputs(BaseModel):
-    audio: str
-
-
 @app.post("/nemo/asr/")
 @gooey_gpu.endpoint
-def nemo_asr_api(pipeline: PipelineInfo, inputs: NemoASRInputs):
+def nemo_asr_api(pipeline: PipelineInfo, inputs: NemoASRInputs) -> AsrOutput:
     model_name = os.path.basename(pipeline.model_id)
     # get cached model path
     model_path = os.path.join("/root/.cache/gooey-gpu/checkpoints", model_name)
@@ -31,7 +26,7 @@ def nemo_asr_api(pipeline: PipelineInfo, inputs: NemoASRInputs):
     with tempfile.NamedTemporaryFile(suffix=os.path.splitext(inputs.audio)[-1]) as f:
         f.write(requests.get(inputs.audio).content)
         # run ASR
-        return run_nemo_asr(model_path, f.name)
+        return {"text": run_nemo_asr(model_path, f.name)}
 
 
 @gooey_gpu.gpu_task
