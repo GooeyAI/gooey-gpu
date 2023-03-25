@@ -227,16 +227,26 @@ def download_image(
     f = io.BytesIO(im_bytes)
     im_pil = PIL.Image.open(f).convert(mode)
     if max_size:
-        im_pil = resize_img_scale(im_pil, max_size)
+        im_pil = downscale_img(im_pil, max_size)
     return im_pil
 
 
-def resize_img_scale(im_pil: PIL.Image.Image, max_size: (int, int)) -> PIL.Image.Image:
-    factor = math.sqrt((max_size[0] * max_size[1]) / (im_pil.size[0] * im_pil.size[1]))
-    if 1 - factor > 1e-2:
-        im_pil = PIL.ImageOps.scale(im_pil, factor)
-        print(f"Resize image by {factor:.3f}x = {im_pil.size}")
+def downscale_img(im_pil: PIL.Image.Image, max_size: (int, int)) -> PIL.Image.Image:
+    downscale_factor = get_downscale_factor(im_size=im_pil.size, max_size=max_size)
+    if downscale_factor:
+        im_pil = PIL.ImageOps.scale(im_pil, downscale_factor)
+        print(f"Resize image by {downscale_factor:.3f}x = {im_pil.size}")
     return im_pil
+
+
+def get_downscale_factor(*, im_size: (int, int), max_size: (int, int)) -> float | None:
+    downscale_factor = math.sqrt(
+        (max_size[0] * max_size[1]) / (im_size[0] * im_size[1])
+    )
+    if downscale_factor < 0.99:
+        return downscale_factor
+    else:
+        return None
 
 
 def upload_images(images: list[PIL.Image.Image], upload_urls: list[str]):
