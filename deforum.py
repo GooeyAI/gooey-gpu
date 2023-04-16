@@ -49,8 +49,8 @@ def deforum(
 @gooey_gpu.gpu_task
 def run_deforum(*, pipeline: PipelineInfo, args, anim_args):
     root = load_deforum(pipeline)
-    with gooey_gpu.use_models(root.model):
-        deforum_script.run(root, args, anim_args)
+    # with gooey_gpu.use_models(root.model):
+    deforum_script.run(root, args, anim_args)
     return args, anim_args
 
 
@@ -66,4 +66,5 @@ def load_deforum(pipeline):
         root.model_checkpoint = pipeline.model_id
         deforum_script.setup(root)
         _deforum_cache[pipeline.model_id] = root
+        root.model.to(gooey_gpu.DEVICE_ID)
     return root

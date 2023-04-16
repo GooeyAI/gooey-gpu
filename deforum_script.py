@@ -33,9 +33,10 @@ from helpers.render import (
 from helpers.model_load import load_model, get_model_output_paths
 from helpers.aesthetics import load_aesthetics_model
 
+
 # @markdown **Path Setup**
 class Root:
-    models_path = "/src/checkpoints"  # @param {type:"string"}
+    models_path = "/root/.cache/gooey-gpu/checkpoints"  # @param {type:"string"}
     configs_path = "/src/deforum-stable-diffusion/configs"  # @param {type:"string"}
     output_path = "/src/output"  # @param {type:"string"}
     mount_google_drive = False  # @param {type:"boolean"}

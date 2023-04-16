@@ -22,13 +22,12 @@ from accelerate import cpu_offload_with_hook
 from diffusers import ConfigMixin
 from redis.exceptions import LockError
 from redis.lock import Lock
-from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-DEVICE_ID = os.environ.get("DEVICE_ID", "cuda:0")
+DEVICE_ID = os.environ.get("DEVICE_ID", "").strip() or "cuda:0"
 REDIS_HOST = os.environ.get("REDIS_HOST", "").strip()
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "").strip()
-MAX_WORKERS = int(os.environ.get("MAX_WORKERS", "1"))
+MAX_WORKERS = int(os.environ.get("MAX_WORKERS", "").strip() or "1")
 
 
 if SENTRY_DSN:
@@ -250,10 +249,7 @@ def get_downscale_factor(*, im_size: (int, int), max_size: (int, int)) -> float 
 
 
 def upload_images(images: list[PIL.Image.Image], upload_urls: list[str]):
-    def fn(args):
-        return upload_image(*args)
-
-    list(map_parallel(fn, list(zip(images, upload_urls))))
+    apply_parallel(upload_image, images, upload_urls)
 
 
 def upload_image(im_pil: PIL.Image.Image, url: str):
@@ -267,6 +263,14 @@ def upload_image(im_pil: PIL.Image.Image, url: str):
         data=im_bytes,
     )
     r.raise_for_status()
+
+
+def apply_parallel(fn, *iterables):
+    threads = [threading.Thread(target=fn, args=args) for args in zip(*iterables)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
 
 
 def map_parallel(fn, it):

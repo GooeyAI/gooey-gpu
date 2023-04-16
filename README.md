@@ -3,7 +3,7 @@
 Docker container which provides inference endpoints for the following - 
 
 Endpoint | Models
--- | --
+--- | ---
 `/text2img/` |  `StableDiffusionPipeline` [models](https://huggingface.co/models?sort=downloads&search=diffusion)
 `/img2img/`  |  `StableDiffusionImg2ImgPipeline` [models](https://huggingface.co/models?sort=downloads&search=diffusion)
 `/inpaint/`  |  `StableDiffusionInpaintPipeline` [models](https://huggingface.co/models?sort=downloads&search=inpainting)
@@ -11,7 +11,6 @@ Endpoint | Models
 `/instruct_pix2pix/` |  [`StableDiffusionInstructPix2PixPipeline`](https://huggingface.co/timbrooks/instruct-pix2pix)
 `/deforum/` | [deforum-stable-diffusion](https://github.com/deforum-art/deforum-stable-diffusion)
 `/image-captioning/` | [LAVIS image captioning](https://github.com/salesforce/LAVIS/#image-captioning)
-`/vqa/` | [LAVIS visual Q&A](https://github.com/salesforce/LAVIS/#visual-question-answering-vqa)
 `/controlnet/`  | [`StableDiffusionControlNetPipeline`](https://huggingface.co/docs/diffusers/main/en/api/pipelines/stable_diffusion/controlnet) using [`ControlNetModel`](https://huggingface.co/lllyasviel?q=controlnet)
 `/whisper/` | [transformers asr pipeline](https://huggingface.co/docs/transformers/tasks/asr)
 `/nemo/asr/` | [Nvidia Nemo ASR](https://docs.nvidia.com/deeplearning/nemo/user-guide/docs/en/main/asr/intro.html)

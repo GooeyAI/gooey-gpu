@@ -37,7 +37,7 @@ def run_whisper(audio: bytes, inputs: WhisperInputs, model_id: str):
             # see https://colab.research.google.com/drive/1rS1L4YSJqKUH_3YxIQHBI982zso23wor#scrollTo=Ca4YYdtATxzo&line=5&uniqifier=1
             chunk_length_s=30,
             stride_length_s=[6, 0],
-            batch_size=32,
+            batch_size=128,
         )
     return prediction
 

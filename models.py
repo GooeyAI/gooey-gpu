@@ -16,9 +16,9 @@ class PipelineInfo(BaseModel):
 class DiffusersInputs(BaseModel):
     prompt: typing.List[str]
     negative_prompt: typing.List[str] = None
-    num_images_per_prompt: int
-    num_inference_steps: int
-    guidance_scale: float
+    num_images_per_prompt: int = 1
+    num_inference_steps: int = 50
+    guidance_scale: float = 7.5
 
 
 class Text2ImgInputs(DiffusersInputs):
@@ -52,6 +52,15 @@ class ControlNetPipelineInfo(PipelineInfo):
 
 class ControlNetInputs(DiffusersInputs):
     image: typing.List[str]
+
+
+class AudioLDMInputs(BaseModel):
+    prompt: typing.List[str]
+    negative_prompt: typing.List[str] = None
+    num_waveforms_per_prompt: int = 1
+    num_inference_steps: int = 10
+    guidance_scale: float = 2.5
+    audio_length_in_s: float = 5.12
 
 
 class VQAInput(BaseModel):

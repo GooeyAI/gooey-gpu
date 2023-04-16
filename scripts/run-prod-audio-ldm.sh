@@ -2,7 +2,7 @@
 
 set -x
 
-NAME=asr
+NAME=sd-multi
 
 docker build . -t gooey-gpu:$NAME
 
@@ -14,7 +14,7 @@ docker run -d --restart always \
   -v $HOME/.cache/torch:/root/.cache/torch \
   -e SENTRY_DSN=$SENTRY_DSN \
   -e MAX_WORKERS=$MAX_WORKERS \
-  -p 5016:5000 \
+  -p 5017:5000 \
   --gpus all \
   gooey-gpu:$NAME
 

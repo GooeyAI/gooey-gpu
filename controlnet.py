@@ -25,12 +25,15 @@ def controlnet(
 ):
     image = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
     if not pipeline.disable_preprocessing:
-        try:
-            preprocessor = CONTROLNET_PREPROCESSORS[pipeline.controlnet_model_id]
-        except KeyError:
-            pass
-        else:
-            image = [preprocessor(im) for im in image]
+        for idx, (im, controlnet_model_id) in enumerate(
+            zip(image, pipeline.controlnet_model_id)
+        ):
+            try:
+                preprocessor = CONTROLNET_PREPROCESSORS[pipeline.controlnet_model_id]
+            except KeyError:
+                pass
+            else:
+                image[idx] = preprocessor(im)
     return predict_and_upload(
         request=request,
         pipe_cls=StableDiffusionControlNetPipeline,
