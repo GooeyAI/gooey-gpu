@@ -2,7 +2,7 @@
 
 set -x
 
-NAME=sd-multi
+NAME=audio-ldm
 
 docker build . -t gooey-gpu:$NAME
 
