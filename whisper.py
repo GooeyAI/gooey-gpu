@@ -26,14 +26,17 @@ def run_whisper(audio: bytes, inputs: WhisperInputs, model_id: str):
         pipe.model, pipe.model.get_encoder(), pipe.model.get_decoder()
     ):
         pipe.device = torch.device(gooey_gpu.DEVICE_ID)
-        forced_decoder_ids = pipe.tokenizer.get_decoder_prompt_ids(
-            task=inputs.task,
-            language=inputs.language,
-        )
+        generate_kwargs = {}
+        if inputs.language:
+            generate_kwargs[
+                "forced_decoder_ids"
+            ] = pipe.tokenizer.get_decoder_prompt_ids(
+                task=inputs.task, language=inputs.language
+            )
         prediction = pipe(
             audio,
             return_timestamps=inputs.return_timestamps,
-            generate_kwargs=dict(forced_decoder_ids=forced_decoder_ids),
+            generate_kwargs=generate_kwargs,
             # see https://colab.research.google.com/drive/1rS1L4YSJqKUH_3YxIQHBI982zso23wor#scrollTo=Ca4YYdtATxzo&line=5&uniqifier=1
             chunk_length_s=30,
             stride_length_s=[6, 0],
