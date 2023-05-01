@@ -12,8 +12,8 @@ from pydantic.tools import lru_cache
 from starlette.requests import Request
 
 import gooey_gpu
-from diffusion import predict_and_upload
-from models import ControlNetPipelineInfo, ControlNetInputs, MAX_IMAGE_SIZE
+from api import ControlNetPipelineInfo, ControlNetInputs, MAX_IMAGE_SIZE
+from common.diffusion import predict_and_upload
 
 app = APIRouter()
 

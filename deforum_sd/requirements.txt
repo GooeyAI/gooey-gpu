@@ -46,12 +46,3 @@ torchsde ~= 0.2.5
 open-clip-torch ~= 2.10.1
 numpngw ~= 0.1.2
 ipython ~= 8.9.0
-
-## lavis
-#salesforce-lavis ~= 1.0.2
-
-## controlnet
-controlnet_aux ~= 0.0.1
-
-## nvidia NeMo
-nemo_toolkit[all] ~= 1.16.0

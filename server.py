@@ -1,28 +1,13 @@
 import multiprocessing
+import os
 
 from fastapi import FastAPI
 
-import audio_ldm
-import controlnet
-import deforum
-import diffusion
 import gooey_gpu
 
-# import lv
-import nvidia_nemo
-import whisper
-
 app = FastAPI()
-
-
-app.include_router(diffusion.app)
-app.include_router(deforum.app)
-# disabled for now because of https://github.com/salesforce/LAVIS/issues/227
-# app.include_router(lv.app)
-app.include_router(controlnet.app)
-app.include_router(whisper.app)
-app.include_router(nvidia_nemo.app)
-app.include_router(audio_ldm.app)
+variant = __import__(os.environ["VARIANT"])
+app.include_router(variant.app)
 
 
 @app.on_event("startup")

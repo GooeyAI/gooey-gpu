@@ -1,0 +1,28 @@
+## gooey-gpu
+redis ~= 4.4.2
+Pillow ~= 9.4.0
+fastapi ~= 0.89.1
+uvicorn[standard] ~= 0.20.0
+sentry-sdk ~= 1.14.0
+
+## pytorch
+--extra-index-url https://download.pytorch.org/whl/cu116
+torch==1.13.1+cu116
+torchvision==0.14.1+cu116
+torchaudio==0.13.1+cu116
+
+## xformers
+xformers==0.0.16
+triton==2.0.0.dev20221202
+
+## huggingface diffusers
+diffusers ~= 0.14.0
+transformers ~= 4.26.1
+accelerate ~= 0.17.0
+sentencepiece ~= 0.1.97
+
+## lavis
+salesforce-lavis ~= 1.0.2
+
+## nvidia NeMo
+nemo_toolkit[all] ~= 1.16.0

@@ -29,7 +29,7 @@ E.g.
 
 ```
 # starts the docker container on port 5012
-./scripts/run-dev.sh  
+./scripts/run-dev.sh common
 ```
 
 View API docs at `http://localhost:5012/docs`
@@ -51,7 +51,7 @@ upload_url = blob.generate_signed_url(
 
 # run stable diffusion 2.1
 r = requests.post(
-    "http://localhost:5012/text2img/",
+    "http://localhost:5000/text2img/",
     json=dict(
         pipeline={
             "upload_urls": [upload_url],

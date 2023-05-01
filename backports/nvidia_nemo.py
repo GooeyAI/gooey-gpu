@@ -7,7 +7,7 @@ import requests
 from fastapi import APIRouter
 
 import gooey_gpu
-from models import PipelineInfo, AsrOutput, NemoASRInputs
+from api import PipelineInfo, AsrOutput, NemoASRInputs
 
 app = APIRouter()
 

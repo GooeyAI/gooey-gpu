@@ -7,7 +7,7 @@ from starlette.requests import Request
 
 import deforum_script
 import gooey_gpu
-from models import PipelineInfo
+from api import PipelineInfo
 
 app = APIRouter()
 

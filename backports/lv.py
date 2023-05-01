@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from lavis.models import load_model_and_preprocess
 
 import gooey_gpu
-from models import PipelineInfo, VQAInput, MAX_IMAGE_SIZE, ImageCaptioningInput
+from api import PipelineInfo, VQAInput, MAX_IMAGE_SIZE, ImageCaptioningInput
 
 app = APIRouter()
 

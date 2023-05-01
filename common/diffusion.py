@@ -16,7 +16,7 @@ from fastapi import APIRouter
 from starlette.requests import Request
 
 import gooey_gpu
-from models import (
+from api import (
     PipelineInfo,
     Img2ImgInputs,
     Text2ImgInputs,

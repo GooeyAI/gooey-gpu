@@ -6,7 +6,7 @@ import transformers
 from fastapi import APIRouter
 
 import gooey_gpu
-from models import PipelineInfo, WhisperInputs, AsrOutput
+from api import PipelineInfo, WhisperInputs, AsrOutput
 
 app = APIRouter()
 

@@ -13,16 +13,20 @@ from time import time
 
 import PIL.Image
 import PIL.ImageOps
-import redis
+import numpy as np
 import requests
+import scipy
 import sentry_sdk
 import torch
 import transformers
 from accelerate import cpu_offload_with_hook
-from diffusers import ConfigMixin
-from redis.exceptions import LockError
-from redis.lock import Lock
 from starlette.responses import JSONResponse
+
+try:
+    from diffusers import ConfigMixin
+except ImportError:
+    ConfigMixin = None
+
 
 DEVICE_ID = os.environ.get("DEVICE_ID", "").strip() or "cuda:0"
 REDIS_HOST = os.environ.get("REDIS_HOST", "").strip()
@@ -40,6 +44,39 @@ if SENTRY_DSN:
         send_default_pii=True,
     )
     print("🛰️ Sentry error tracking enabled.")
+
+if REDIS_HOST:
+    import redis
+    from redis.exceptions import LockError
+    from redis.lock import Lock
+
+    class GpuLock(Lock):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            self.local._count = 0
+
+        def acquire(self, *args, **kwargs) -> bool:
+            if self.owned():
+                self.local._count += 1
+                return True
+            s = time()
+            rc = super().acquire(*args, **kwargs)
+            if rc:
+                self.local._count = 1
+                print(f"GPU Acquired: {time() - s:.3f}s")
+            return rc
+
+        def release(self):
+            if not self.owned():
+                raise LockError("cannot release un-acquired lock")
+            self.local._count -= 1
+            if not self.local._count:
+                super().release()
+
+    redis_client = redis.Redis(REDIS_HOST)
+    gpu_lock = GpuLock(redis_client, f"gpu-locks/{DEVICE_ID}")
+else:
+    gpu_lock = threading.RLock()
 
 
 def endpoint(fn):
@@ -61,37 +98,6 @@ def endpoint(fn):
         return JSONResponse(response)
 
     return wrapper
-
-
-class GpuLock(Lock):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.local._count = 0
-
-    def acquire(self, *args, **kwargs) -> bool:
-        if self.owned():
-            self.local._count += 1
-            return True
-        s = time()
-        rc = super().acquire(*args, **kwargs)
-        if rc:
-            self.local._count = 1
-            print(f"GPU Acquired: {time() - s:.3f}s")
-        return rc
-
-    def release(self):
-        if not self.owned():
-            raise LockError("cannot release un-acquired lock")
-        self.local._count -= 1
-        if not self.local._count:
-            super().release()
-
-
-if REDIS_HOST:
-    redis_client = redis.Redis(REDIS_HOST)
-    gpu_lock = GpuLock(redis_client, f"gpu-locks/{DEVICE_ID}")
-else:
-    gpu_lock = threading.RLock()
 
 
 M = typing.TypeVar("M", bound=torch.nn.Module | ConfigMixin | transformers.Pipeline)
@@ -133,18 +139,22 @@ def register_cpu_offload(obj: M, offload: bool = False):
         raise ValueError(f"Not sure how to offload a `{type(obj)}`")
 
 
-_saved_hooks = {}
+# _saved_hooks = {}
 
 
 def module_register_cpu_offload(module: torch.nn.Module, offload: bool = False):
-    try:
-        hook = _saved_hooks[module]
-    except KeyError:
-        module.to("cpu")
-        _, hook = cpu_offload_with_hook(module, DEVICE_ID)
-        _saved_hooks[module] = hook
     if offload:
-        hook.offload()
+        module.to("cpu")
+    else:
+        module.to(DEVICE_ID)
+    # try:
+    #     hook = _saved_hooks[module]
+    # except KeyError:
+    #     module.to("cpu")
+    #     _, hook = cpu_offload_with_hook(module, DEVICE_ID)
+    #     _saved_hooks[module] = hook
+    # if offload:
+    #     hook.offload()
 
 
 P = typing.ParamSpec("P")
@@ -276,3 +286,13 @@ def apply_parallel(fn, *iterables):
 def map_parallel(fn, it):
     with ThreadPoolExecutor(max_workers=len(it)) as pool:
         return list(pool.map(fn, it))
+
+
+def upload_audio(audio: np.ndarray, url: str, rate: int = 16_000):
+    # The resulting audio output can be saved as a .wav file:
+    f = io.BytesIO()
+    scipy.io.wavfile.write(f, rate=rate, data=audio)
+    audio_bytes = f.getvalue()
+    # upload to given url
+    r = requests.put(url, headers={"Content-Type": "audio/wav"}, data=audio_bytes)
+    r.raise_for_status()

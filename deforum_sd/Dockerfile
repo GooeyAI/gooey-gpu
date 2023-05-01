@@ -27,12 +27,6 @@ RUN curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master
 	pyenv install 3.10 && \
 	pyenv global 3.10
 
-# app dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	libgl1-mesa-glx \
-	ffmpeg \
-	&& rm -rf /var/lib/apt/lists/*
-
 # copy to /src
 ENV WORKDIR /src
 RUN mkdir -p $WORKDIR
@@ -43,7 +37,11 @@ RUN git clone --branch patch-1 https://github.com/devxpy/deforum-stable-diffusio
 RUN echo '' > deforum-stable-diffusion/src/k_diffusion/__init__.py
 
 # app dependencies
-COPY requirements.txt .
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	libgl1-mesa-glx \
+	ffmpeg \
+	&& rm -rf /var/lib/apt/lists/*
+COPY deforum_sd/requirements.txt .
 RUN pip install Cython && pip install -r requirements.txt
 
 # copy sources
@@ -52,4 +50,4 @@ COPY . .
 ENV PYTHONUNBUFFERED=1
 
 # run prediction server
-CMD uvicorn server:app --host 0.0.0.0 --port 5000
+ENTRYPOINT uvicorn server:app --host 0.0.0.0 --port 5000

@@ -1,15 +1,12 @@
 import io
 from functools import lru_cache
 
-import numpy as np
-import requests
-import scipy
 import torch
 from diffusers import AudioLDMPipeline
 from fastapi import APIRouter
 
 import gooey_gpu
-from models import PipelineInfo, AudioLDMInputs
+from api import PipelineInfo, AudioLDMInputs
 
 app = APIRouter()
 
@@ -20,7 +17,7 @@ def audio_ldm(pipeline: PipelineInfo, inputs: AudioLDMInputs):
     # generate audio on gpu
     audios = run_audio_ldm(pipeline, inputs)
     # upload audios
-    gooey_gpu.apply_parallel(upload_audio, audios, pipeline.upload_urls)
+    gooey_gpu.apply_parallel(gooey_gpu.upload_audio, audios, pipeline.upload_urls)
 
 
 @gooey_gpu.gpu_task
@@ -37,13 +34,3 @@ def run_audio_ldm(pipeline: PipelineInfo, inputs: AudioLDMInputs) -> io.BytesIO:
 @lru_cache
 def get_audio_ldm_pipeline(model_id):
     return AudioLDMPipeline.from_pretrained(model_id)
-
-
-def upload_audio(audio: np.ndarray, url: str):
-    # The resulting audio output can be saved as a .wav file:
-    f = io.BytesIO()
-    scipy.io.wavfile.write(f, rate=16000, data=audio)
-    audio_bytes = f.getvalue()
-    # upload to given url
-    r = requests.put(url, headers={"Content-Type": "audio/wav"}, data=audio_bytes)
-    r.raise_for_status()
