@@ -10,10 +10,12 @@ Endpoint | Models
 `/upscale/`  |  `StableDiffusionUpscalePipeline` [models](https://huggingface.co/models?sort=downloads&search=upscaler)
 `/instruct_pix2pix/` |  [`StableDiffusionInstructPix2PixPipeline`](https://huggingface.co/timbrooks/instruct-pix2pix)
 `/deforum/` | [deforum-stable-diffusion](https://github.com/deforum-art/deforum-stable-diffusion)
+`/vqa/` | [Visual question answering](https://github.com/salesforce/LAVIS#visual-question-answering-vqa)
 `/image-captioning/` | [LAVIS image captioning](https://github.com/salesforce/LAVIS/#image-captioning)
 `/controlnet/`  | [`StableDiffusionControlNetPipeline`](https://huggingface.co/docs/diffusers/main/en/api/pipelines/stable_diffusion/controlnet) using [`ControlNetModel`](https://huggingface.co/lllyasviel?q=controlnet)
 `/whisper/` | [transformers asr pipeline](https://huggingface.co/docs/transformers/tasks/asr)
 `/nemo/asr/` | [Nvidia Nemo ASR](https://docs.nvidia.com/deeplearning/nemo/user-guide/docs/en/main/asr/intro.html)
+`/deepfloyd_if/text2img/` | [DeepFloyd IF](https://github.com/deep-floyd/IF)
 ---
 
 Features: 
