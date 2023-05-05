@@ -5,9 +5,9 @@ import requests
 from fastapi import APIRouter
 from starlette.requests import Request
 
-import deforum_script
 import gooey_gpu
 from api import PipelineInfo
+from deforum_sd import deforum_script
 
 app = APIRouter()
 
