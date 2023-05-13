@@ -135,8 +135,6 @@ def predict_on_gpu(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
     with gooey_gpu.use_models(pipe), torch.inference_mode():
         # custom safety checker impl
         safety_checker_wrapper(pipe, disabled=pipeline.disable_safety_checker)
-        # enable optimizations
-        pipe.enable_xformers_memory_efficient_attention()
         # set seed
         generator = torch.Generator("cuda").manual_seed(pipeline.seed)
         # generate output
