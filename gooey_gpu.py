@@ -32,6 +32,9 @@ DEVICE_ID = os.environ.get("DEVICE_ID", "").strip() or "cuda:0"
 REDIS_HOST = os.environ.get("REDIS_HOST", "").strip()
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "").strip()
 MAX_WORKERS = int(os.environ.get("MAX_WORKERS", "").strip() or "1")
+DISABLE_CPU_OFFLOAD = bool(
+    int(os.environ.get("DISABLE_CPU_OFFLOAD", "").strip() or "0")
+)
 
 
 if SENTRY_DSN:
@@ -113,6 +116,8 @@ def use_models(*models: M):
         # this should automatically move it to gpu when model's forward() is called.
         yield
     finally:
+        if DISABLE_CPU_OFFLOAD:
+            return
         # offload to cpu
         for obj in models:
             register_cpu_offload(obj, offload=True)
