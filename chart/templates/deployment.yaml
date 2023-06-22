@@ -1,0 +1,78 @@
+{{- range .Values.deployments }}
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "{{ $.Release.Name }}-{{ .name }}"
+  namespace: "default"
+  labels:
+    app: "{{ $.Release.Name }}-{{ .name }}"
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      name: "{{ $.Release.Name }}-{{ .name }}"
+  template:
+    metadata:
+      labels:
+        name: "{{ $.Release.Name }}-{{ .name }}"
+    spec:
+      {{- if .nodeSelector }}
+      nodeSelector: {{- toYaml .nodeSelector | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: "worker"
+        image: "{{ .image }}"
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+            {{- if .limits }}{{- toYaml .limits | nindent 12 }}{{- end }}
+        env:
+          {{- if .env }}
+          {{- range $name, $value := .env }}
+          - name: "{{ $name }}"
+            value: "{{ $value }}"
+          {{- end }}
+          {{- end }}
+          {{- if $.Values.commonEnv}}
+          {{- range $name, $value := $.Values.commonEnv }}
+          - name: "{{ $name }}"
+            value: "{{ $value }}"
+          {{- end }}
+          {{- end }}
+        #livenessProbe:
+        #  exec:
+        #    command: [ bash -c "celery inspect ping -d celery@$HOSTNAME" ]
+        #  failureThreshold: 5  # consider it dead after 5 failed attempts
+        #  periodSeconds: 60  # default is quite often and celery uses a lot cpu/ram then.
+        #  timeoutSeconds: 10  # default is too low
+        #startupProbe:
+        #  exec:
+        #    command: [ bash -c "celery inspect ping -d celery@$HOSTNAME" ]
+        #  failureThreshold: 5  # consider it dead after 5 failed attempts
+        #  periodSeconds: 60  # default is quite often and celery uses a lot cpu/ram then.
+        #  timeoutSeconds: 10  # default is too low
+        volumeMounts:
+        {{- range tuple "huggingface" "torch" "suno" "gooey-gpu/checkpoints" }}
+        - name: "{{ $.Release.Name }}-pvc"
+          mountPath: "/root/.cache/{{ . }}"
+          subPath: "cache/{{ . }}"
+        {{- end }}
+      volumes:
+      - name: "{{ $.Release.Name }}-pvc"
+        persistentVolumeClaim:
+          claimName: "{{ $.Release.Name }}-pvc"
+{{- end }}
+
+{{/*---*/}}
+{{/*apiVersion: "v1"*/}}
+{{/*kind: "ConfigMap"*/}}
+{{/*metadata:*/}}
+{{/*  name: "{{ .Release.Name }}-config"*/}}
+{{/*  namespace: "default"*/}}
+{{/*  labels:*/}}
+{{/*    app: "{{ include "common.name" . }}"*/}}
+{{/*data:*/}}
+{{/*  BROKER_URL: "pyamqp://rabbit:XweifafT2pvz@rabbitmq-1-rabbitmq-svc:5672/"*/}}
+{{/*  RESULT_BACKEND: "redis://:C8WV9uS4VcQBhYdo5YqAdvbuTCYXgNSjctTU74Y8ftXh2quJXZiQ7uBr5ZXvM4KoUpW23Q8grLh2xQ1WFMVuZnJWtEiDfKjXd2fTJmiKDkrAhDXwQNM1CLx1SZtH9Ech@redis-ha-1"*/}}
+{{/*---*/}}

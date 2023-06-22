@@ -1,5 +1,6 @@
 import contextlib
 import gc
+import inspect
 import io
 import math
 import os
@@ -13,14 +14,14 @@ from time import time
 
 import PIL.Image
 import PIL.ImageOps
-import numpy as np
 import requests
-import scipy
 import sentry_sdk
 import torch
 import transformers
-from accelerate import cpu_offload_with_hook
-from starlette.responses import JSONResponse
+from pydantic import BaseModel
+
+# from accelerate import cpu_offload_with_hook
+# from starlette.responses import JSONResponse
 
 try:
     from diffusers import ConfigMixin
@@ -83,22 +84,33 @@ else:
 
 
 def endpoint(fn):
+    signature = inspect.signature(fn)
+
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        s = time()
-        print(f"---> {fn.__name__}: {args!r} {kwargs!r}")
+        for k, t in signature.parameters.items():
+            model = t.annotation
+            if issubclass(model, BaseModel):
+                kwargs[k] = model.parse_obj(kwargs[k])
+        print(f"---> {fn.__name__}: {kwargs!r}")
         try:
-            response = fn(*args, **kwargs)
-        except GpuFuncException as e:
-            return e.response
-        except Exception as e:
-            return _response_for_exc(e)
+            return fn(*args, **kwargs)
         finally:
-            # just for good measure - https://pytorch.org/docs/stable/notes/faq.html#my-out-of-memory-exception-handler-can-t-allocate-memory
             gc.collect()
             torch.cuda.empty_cache()
-            print(f"Total Time: {time() - s:.3f}s")
-        return JSONResponse(response)
+        # s = time()
+        # try:
+        #     response = fn(*args, **kwargs)
+        # except GpuFuncException as e:
+        #     return e.response
+        # except Exception as e:
+        #     return _response_for_exc(e)
+        # finally:
+        #     # just for good measure - https://pytorch.org/docs/stable/notes/faq.html#my-out-of-memory-exception-handler-can-t-allocate-memory
+        #     gc.collect()
+        #     torch.cuda.empty_cache()
+        #     print(f"Total Time: {time() - s:.3f}s")
+        # return JSONResponse(response)
 
     return wrapper
 
@@ -293,7 +305,9 @@ def map_parallel(fn, it):
         return list(pool.map(fn, it))
 
 
-def upload_audio(audio: np.ndarray, url: str, rate: int = 16_000):
+def upload_audio(audio, url: str, rate: int = 16_000):
+    import scipy
+
     # The resulting audio output can be saved as a .wav file:
     f = io.BytesIO()
     scipy.io.wavfile.write(f, rate=rate, data=audio)

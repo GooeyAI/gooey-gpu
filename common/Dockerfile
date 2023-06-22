@@ -1,7 +1,8 @@
 FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
 
-# install python via pyenv
 ARG DEBIAN_FRONTEND=noninteractive
+
+# install python via pyenv
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	make \
 	build-essential \
@@ -21,11 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	liblzma-dev \
 	git \
 	ca-certificates \
-	&& rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 ENV PATH="/root/.pyenv/shims:/root/.pyenv/bin:$PATH"
 RUN curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash && \
-	pyenv install 3.11 && \
-	pyenv global 3.11
+	pyenv install 3.10 && \
+	pyenv global 3.10
 
 # create a dir for the app's code
 ENV WORKDIR /src
@@ -36,14 +37,13 @@ WORKDIR $WORKDIR
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	libgl1-mesa-glx \
 	ffmpeg \
-	&& rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 COPY common/requirements.txt .
-RUN pip install -U pip && pip install Cython && pip install -r requirements.txt
+RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir Cython && pip install --no-cache-dir -r requirements.txt
 
 # copy sources
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-# run prediction server
-ENTRYPOINT uvicorn server:app --host 0.0.0.0 --port 5000
+ENTRYPOINT celery -A celeryconfig worker --loglevel=INFO --concurrency=1 -P threads

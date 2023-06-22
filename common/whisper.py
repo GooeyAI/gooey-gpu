@@ -1,51 +1,61 @@
+import os
 from functools import lru_cache
 
 import requests
 import torch
 import transformers
-from fastapi import APIRouter
+from celery.signals import worker_init
+from kombu import Queue
 
 import gooey_gpu
 from api import PipelineInfo, WhisperInputs, AsrOutput
+from celeryconfig import app
 
-app = APIRouter()
+QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
+MODEL_IDS = os.environ["MODEL_IDS"].split()
+
+app.conf.task_queues = app.conf.task_queues or []
+for model_id in MODEL_IDS:
+    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
+    app.conf.task_queues.append(Queue(queue))
 
 
-@app.post("/whisper/")
+@worker_init.connect()
+def init(**kwargs):
+    # app.conf.task_queues = []
+    for model_id in MODEL_IDS:
+        load_pipe(model_id)
+
+
+@app.task(name="whisper")
 @gooey_gpu.endpoint
 def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
     audio = requests.get(inputs.audio).content
-    prediction = run_whisper(audio, inputs, pipeline.model_id)
-    return prediction
-
-
-@gooey_gpu.gpu_task
-def run_whisper(audio: bytes, inputs: WhisperInputs, model_id: str):
-    pipe = load_pipe(model_id)
-    with gooey_gpu.use_models(
-        pipe.model, pipe.model.get_encoder(), pipe.model.get_decoder()
-    ):
-        pipe.device = torch.device(gooey_gpu.DEVICE_ID)
-        generate_kwargs = {}
-        if inputs.language:
-            generate_kwargs[
-                "forced_decoder_ids"
-            ] = pipe.tokenizer.get_decoder_prompt_ids(
-                task=inputs.task, language=inputs.language
-            )
-        prediction = pipe(
-            audio,
-            return_timestamps=inputs.return_timestamps,
-            generate_kwargs=generate_kwargs,
-            # see https://colab.research.google.com/drive/1rS1L4YSJqKUH_3YxIQHBI982zso23wor#scrollTo=Ca4YYdtATxzo&line=5&uniqifier=1
-            chunk_length_s=30,
-            stride_length_s=[6, 0],
-            batch_size=128,
+    pipe = load_pipe(pipeline.model_id)
+    generate_kwargs = {}
+    if inputs.language:
+        generate_kwargs["forced_decoder_ids"] = pipe.tokenizer.get_decoder_prompt_ids(
+            task=inputs.task, language=inputs.language
         )
+    prediction = pipe(
+        audio,
+        return_timestamps=inputs.return_timestamps,
+        generate_kwargs=generate_kwargs,
+        # see https://colab.research.google.com/drive/1rS1L4YSJqKUH_3YxIQHBI982zso23wor#scrollTo=Ca4YYdtATxzo&line=5&uniqifier=1
+        chunk_length_s=30,
+        stride_length_s=[6, 0],
+        batch_size=32,
+    )
     return prediction
 
 
 @lru_cache
 def load_pipe(model_id: str):
-    pipe = transformers.pipeline("automatic-speech-recognition", model=model_id)
+    print(f"Loading whisper model {model_id!r}...")
+    pipe = transformers.pipeline(
+        "automatic-speech-recognition",
+        model=model_id,
+        device=gooey_gpu.DEVICE_ID,
+        torch_dtype=torch.float16,
+    )
     return pipe

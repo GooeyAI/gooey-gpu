@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	ffmpeg \
 	&& rm -rf /var/lib/apt/lists/*
 COPY deforum_sd/requirements.txt .
-RUN pip install Cython && pip install -r requirements.txt
+RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir Cython && pip install --no-cache-dir -r requirements.txt
 
 # copy sources
 COPY . .
@@ -50,4 +50,4 @@ COPY . .
 ENV PYTHONUNBUFFERED=1
 
 # run prediction server
-ENTRYPOINT uvicorn server:app --host 0.0.0.0 --port 5000
+ENTRYPOINT celery -A celeryconfig worker --loglevel=INFO --concurrency=1 -P threads

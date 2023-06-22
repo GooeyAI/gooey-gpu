@@ -1,0 +1,127 @@
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+persistence:
+  enabled: true
+  storageClass: "premium-rwo"
+  size: 250Gi
+
+storageClass:
+  defaultClass: true
+
+commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:c8a3503d48040251724c8c5a1bdf15b0d87ce0a563fac158e6c404787bce3d71"
+deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
+
+controlnetModelIds: &controlnetModelIds |-
+    lllyasviel/sd-controlnet-canny
+    lllyasviel/sd-controlnet-depth
+    lllyasviel/sd-controlnet-hed
+    lllyasviel/sd-controlnet-mlsd
+    lllyasviel/sd-controlnet-normal
+    lllyasviel/sd-controlnet-openpose
+    lllyasviel/sd-controlnet-scribble
+    lllyasviel/sd-controlnet-seg
+
+deployments:
+  - name: "common-diffusion-1"
+    image: *commonImg
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      MODEL_IDS: |-
+        runwayml/stable-diffusion-v1-5
+        stabilityai/stable-diffusion-2-1
+        Lykon/DreamShaper
+  - name: "common-diffusion-2"
+    image: *commonImg
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      MODEL_IDS: |-
+        wavymulder/Analog-Diffusion
+        prompthero/openjourney
+        prompthero/openjourney-v2
+  - name: "common-diffusion-3"
+    image: *commonImg
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      MODEL_IDS: |-
+        dreamlike-art/dreamlike-photoreal-2.0
+        devxpy/rodent-diffusion-1-5
+        darkstorm2150/Protogen_v5.3_Official_Release
+  - name: "common-diffusion-4"
+    image: *commonImg
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-a100-80gb"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "10"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+      MODEL_IDS: |-
+        timbrooks/instruct-pix2pix
+  - name: "common-diffusion-upscale"
+    image: *commonImg
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      IMPORTS: |-
+        common.diffusion
+      MODEL_IDS: |-
+        stabilityai/stable-diffusion-x4-upscaler
+  - name: "deforum-sd-1"
+    image: *deforumImg
+    replicas: 4
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-a100-80gb"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "10"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        deforum_sd
+      MODEL_IDS: |-
+        Protogen_V2.2.ckpt
+#  - name: "common-whisper"
+#    image: *commonImg
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: nvidia-l4
+#    env:
+#      IMPORTS: |-
+#        common.whisper
+#      MODEL_IDS: |-
+#        openai/whisper-large-v2
+#        vasista22/whisper-telugu-large-v2
+#        vasista22/whisper-hindi-large-v2

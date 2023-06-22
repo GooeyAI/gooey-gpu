@@ -54,6 +54,17 @@ class ControlNetInputs(DiffusersInputs):
     image: typing.List[str]
 
 
+class ControlNetImg2ImgInputs(DiffusersInputs):
+    image: typing.List[str]
+    control_image: typing.List[str]
+
+
+class ControlNetInpaintInputs(DiffusersInputs):
+    image: typing.List[str]
+    control_image: typing.List[str]
+    mask_image: typing.List[str]
+
+
 class AudioLDMInputs(BaseModel):
     prompt: typing.List[str]
     negative_prompt: typing.List[str] = None

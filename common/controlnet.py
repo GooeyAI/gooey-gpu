@@ -1,29 +1,48 @@
+import os
+from functools import lru_cache
+
 import PIL.Image
 import controlnet_aux
 import cv2
 import numpy as np
 import torch
 import transformers
+from celery.signals import worker_init
 from diffusers import (
+    ControlNetModel,
     StableDiffusionControlNetPipeline,
 )
-from fastapi import APIRouter
-from pydantic.tools import lru_cache
-from starlette.requests import Request
 
 import gooey_gpu
-from api import ControlNetPipelineInfo, ControlNetInputs, MAX_IMAGE_SIZE
-from common.diffusion import predict_and_upload
+from api import (
+    ControlNetPipelineInfo,
+    ControlNetInputs,
+    MAX_IMAGE_SIZE,
+)
+from common.diffusion import predict_and_upload, app
 
-app = APIRouter()
+CONTROLNET_MODEL_IDS = os.environ["CONTROLNET_MODEL_IDS"].split()
 
 
-@app.post("/controlnet/")
+@worker_init.connect()
+def init(**kwargs):
+    for model_id in CONTROLNET_MODEL_IDS:
+        load_controlnet_model(model_id.strip())
+
+    load_depth_estimator()
+    load_hed()
+    load_mlsd()
+    load_openpose()
+    load_seg()
+    load_normal()
+
+
+@app.task(name="diffusion.controlnet")
 @gooey_gpu.endpoint
-def controlnet(
-    request: Request, pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs
-):
+def controlnet(pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs):
     image = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
+    width = image[0].width
+    height = image[0].height
     if not pipeline.disable_preprocessing:
         for idx, (im, controlnet_model_id) in enumerate(
             zip(image, pipeline.controlnet_model_id)
@@ -34,15 +53,30 @@ def controlnet(
                 pass
             else:
                 image[idx] = preprocessor(im)
+    controlnet_model = load_controlnet_model(pipeline.controlnet_model_id)
+    # with gooey_gpu.use_models(controlnet_model):
+    # controlnet_model = ControlNetModel.from_pretrained(
+    #     pipeline.controlnet_model_id, torch_dtype=torch.float16
+    # ).to(gooey_gpu.DEVICE_ID)
     return predict_and_upload(
-        request=request,
         pipe_cls=StableDiffusionControlNetPipeline,
         pipeline=pipeline,
         inputs=inputs,
-        inputs_mod=dict(
+        inputs_extra=dict(
             image=image,
+            width=width,
+            height=height,
         ),
+        extra_components={"controlnet": controlnet_model},
     )
+
+
+@lru_cache
+def load_controlnet_model(model_id: str) -> ControlNetModel:
+    print(f"Loading ControlNet model {model_id}...")
+    model = ControlNetModel.from_pretrained(model_id, torch_dtype=torch.float16)
+    model = model.to(gooey_gpu.DEVICE_ID)
+    return model
 
 
 def canny(im_pil):
@@ -69,6 +103,11 @@ def load_depth_estimator():
     return transformers.pipeline("depth-estimation", device=gooey_gpu.DEVICE_ID)
 
 
+def scribble(im_pil):
+    model = load_hed()
+    return model(im_pil, scribble=True)
+
+
 def hed(im_pil):
     model = load_hed()
     return model(im_pil)
@@ -76,16 +115,6 @@ def hed(im_pil):
 
 @lru_cache
 def load_hed():
-    return controlnet_aux.HEDdetector.from_pretrained("lllyasviel/ControlNet")
-
-
-def scribble(im_pil):
-    model = load_controlnet()
-    return model(im_pil, scribble=True)
-
-
-@lru_cache
-def load_controlnet():
     return controlnet_aux.HEDdetector.from_pretrained("lllyasviel/ControlNet")
 
 

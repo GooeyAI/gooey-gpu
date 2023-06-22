@@ -1,7 +1,8 @@
-import traceback
+import os
 from functools import lru_cache
 
 import torch
+from celery.signals import worker_init
 from diffusers import (
     StableDiffusionPipeline,
     StableDiffusionImg2ImgPipeline,
@@ -9,11 +10,9 @@ from diffusers import (
     StableDiffusionInstructPix2PixPipeline,
     StableDiffusionInpaintPipeline,
     StableDiffusionUpscalePipeline,
-    ControlNetModel,
     StableDiffusionControlNetPipeline,
 )
-from fastapi import APIRouter
-from starlette.requests import Request
+from kombu import Queue
 
 import gooey_gpu
 from api import (
@@ -25,77 +24,86 @@ from api import (
     UpscaleInputs,
     InstructPix2PixInputs,
     DiffusersInputs,
-    ControlNetPipelineInfo,
 )
+from celeryconfig import app
 
-app = APIRouter()
+QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
+MODEL_IDS = os.environ["MODEL_IDS"].split()
+
+app.conf.task_queues = app.conf.task_queues or []
+for model_id in MODEL_IDS:
+    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
+    app.conf.task_queues.append(Queue(queue))
 
 
-@app.post("/text2img/")
+@worker_init.connect()
+def init(**kwargs):
+    # app.conf.task_queues = []
+    for model_id in MODEL_IDS:
+        _load_pipe_cached(StableDiffusionPipeline, model_id)
+
+
+@app.task(name="diffusion.text2img")
 @gooey_gpu.endpoint
-def text2img(request: Request, pipeline: PipelineInfo, inputs: Text2ImgInputs):
+def text2img(pipeline: PipelineInfo, inputs: Text2ImgInputs):
     return predict_and_upload(
-        request=request,
         pipe_cls=StableDiffusionPipeline,
         pipeline=pipeline,
         inputs=inputs,
     )
 
 
-@app.post("/img2img/")
+@app.task(name="diffusion.img2img")
 @gooey_gpu.endpoint
-def img2img(request: Request, pipeline: PipelineInfo, inputs: Img2ImgInputs):
+def img2img(pipeline: PipelineInfo, inputs: Img2ImgInputs):
     return predict_and_upload(
-        request=request,
         pipe_cls=StableDiffusionImg2ImgPipeline,
         pipeline=pipeline,
         inputs=inputs,
-        inputs_mod=dict(
+        inputs_extra=dict(
             image=gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE),
         ),
     )
 
 
-@app.post("/inpaint/")
+@app.task(name="diffusion.inpaint")
 @gooey_gpu.endpoint
-def inpaint(request: Request, pipeline: PipelineInfo, inputs: InpaintInputs):
+def inpaint(pipeline: PipelineInfo, inputs: InpaintInputs):
+    image = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
     return predict_and_upload(
-        request=request,
         pipe_cls=StableDiffusionInpaintPipeline,
         pipeline=pipeline,
         inputs=inputs,
-        inputs_mod=dict(
-            image=gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE),
+        inputs_extra=dict(
+            image=image,
             mask_image=gooey_gpu.download_images(inputs.mask_image, MAX_IMAGE_SIZE),
+            width=image[0].width,
+            height=image[0].height,
         ),
     )
 
 
-@app.post("/upscale/")
+@app.task(name="diffusion.upscale")
 @gooey_gpu.endpoint
-def upscale(request: Request, pipeline: PipelineInfo, inputs: UpscaleInputs):
+def upscale(pipeline: PipelineInfo, inputs: UpscaleInputs):
     return predict_and_upload(
-        request=request,
         pipe_cls=StableDiffusionUpscalePipeline,
         pipeline=pipeline,
         inputs=inputs,
-        inputs_mod=dict(
+        inputs_extra=dict(
             image=gooey_gpu.download_images(inputs.image, (512, 512)),
         ),
     )
 
 
-@app.post("/instruct_pix2pix/")
+@app.task(name="diffusion.instruct_pix2pix")
 @gooey_gpu.endpoint
-def instruct_pix2pix(
-    request: Request, pipeline: PipelineInfo, inputs: InstructPix2PixInputs
-):
+def instruct_pix2pix(pipeline: PipelineInfo, inputs: InstructPix2PixInputs):
     return predict_and_upload(
-        request=request,
         pipe_cls=StableDiffusionInstructPix2PixPipeline,
         pipeline=pipeline,
         inputs=inputs,
-        inputs_mod=dict(
+        inputs_extra=dict(
             image=gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE),
         ),
     )
@@ -104,46 +112,37 @@ def instruct_pix2pix(
 def predict_and_upload(
     *,
     pipe_cls,
-    request: Request,
     pipeline: PipelineInfo,
     inputs: DiffusersInputs,
-    inputs_mod: dict = None,
+    inputs_extra: dict = None,
+    extra_components: dict = None,
 ):
-    if inputs_mod is None:
-        inputs_mod = {}
+    if inputs_extra is None:
+        inputs_extra = {}
+    if extra_components is None:
+        extra_components = {}
     inputs_dict = inputs.dict()
-    inputs_dict.update(inputs_mod)
-    output_images = predict_on_gpu(
-        pipeline=pipeline, inputs_dict=inputs_dict, pipe_cls=pipe_cls
-    )
-    gooey_gpu.upload_images(output_images, pipeline.upload_urls)
-
-
-@gooey_gpu.gpu_task
-def predict_on_gpu(pipeline: PipelineInfo, inputs_dict: dict, pipe_cls):
-    # load controlnet
-    extra_components = {}
-    if isinstance(pipeline, ControlNetPipelineInfo):
-        extra_components["controlnet"] = load_controlnet_model(
-            pipeline.controlnet_model_id
-        )
+    inputs_dict.update(inputs_extra)
     # load pipe
-    pipe = load_pipe(pipe_cls, pipeline.model_id, extra_components)
-    # load scheduler
-    pipe.scheduler = get_scheduler(pipeline)
-    # gpu inference mode
-    with gooey_gpu.use_models(pipe), torch.inference_mode():
+    pipe = load_pipe(pipe_cls, pipeline.model_id, pipeline.scheduler, extra_components)
+    try:
         # custom safety checker impl
         safety_checker_wrapper(pipe, disabled=pipeline.disable_safety_checker)
         # set seed
         generator = torch.Generator("cuda").manual_seed(pipeline.seed)
         # generate output
-        output = pipe(**inputs_dict, generator=generator)
-        output_images = output.images
-    return output_images
+        pipe.enable_xformers_memory_efficient_attention()
+        with torch.inference_mode():
+            output = pipe(**inputs_dict, generator=generator)
+    finally:
+        # clean up extra components
+        for attr in extra_components.keys():
+            setattr(pipe, attr, None)
+    output_images = output.images
+    gooey_gpu.upload_images(output_images, pipeline.upload_urls)
 
 
-def load_pipe(pipe_cls, model_id: str, extra_components: dict):
+def load_pipe(pipe_cls, model_id: str, scheduler: str, extra_components: dict):
     if issubclass(
         pipe_cls,
         (
@@ -156,43 +155,28 @@ def load_pipe(pipe_cls, model_id: str, extra_components: dict):
         base_cls = StableDiffusionPipeline
     else:
         base_cls = pipe_cls
-    base_pipe = _load_pipe_cached(base_cls, model_id)
+    base_pipe, default_scheduler = _load_pipe_cached(base_cls, model_id)
+    base_pipe.scheduler = default_scheduler
+    if scheduler:
+        base_pipe.scheduler = get_scheduler(base_pipe, scheduler)
     return pipe_cls(**base_pipe.components, **extra_components)
 
 
 @lru_cache
 def _load_pipe_cached(pipe_cls, model_id: str):
+    print(f"Loading SD model {model_id!r}...")
     pipe = pipe_cls.from_pretrained(model_id, torch_dtype=torch.float16)
-    update_schedulers(model_id, pipe)
-    return pipe
+    pipe = pipe.to(gooey_gpu.DEVICE_ID)
+    # pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    return pipe, pipe.scheduler
 
 
-@lru_cache
-def load_controlnet_model(model_id: str) -> ControlNetModel:
-    return ControlNetModel.from_pretrained(model_id, torch_dtype=torch.float16)
-
-
-_schedulers = {}
-
-
-def update_schedulers(model_id: str, pipe: DiffusionPipeline):
-    schedulers = {None: pipe.scheduler}
+def get_scheduler(pipe: DiffusionPipeline, cls_name: str):
     for cls in pipe.scheduler.compatibles:
-        try:
-            schedulers[cls.__name__] = cls.from_config(pipe.scheduler.config)
-        except ImportError:
-            traceback.print_exc()
+        if cls.__name__ != cls_name:
             continue
-    _schedulers[model_id] = schedulers
-
-
-def get_scheduler(pipeline):
-    try:
-        return _schedulers[pipeline.model_id][pipeline.scheduler]
-    except KeyError:
-        raise ValueError(
-            f"Incompatible scheduler `{pipeline.scheduler}` for `{pipeline.model_id}`"
-        )
+        return cls.from_config(pipe.scheduler.config)
+    raise ValueError(f"Incompatible scheduler {cls_name!r}")
 
 
 def safety_checker_wrapper(pipe, disabled: bool):

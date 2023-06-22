@@ -1,22 +1,35 @@
+import os
 import shutil
 import uuid
+from functools import lru_cache
 
 import requests
-from fastapi import APIRouter
-from starlette.requests import Request
+from celery.signals import worker_init
+from kombu import Queue
 
 import gooey_gpu
 from api import PipelineInfo
+from celeryconfig import app
 from deforum_sd import deforum_script
 
-app = APIRouter()
+QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
+MODEL_IDS = os.environ["MODEL_IDS"].split()
+
+app.conf.task_queues = app.conf.task_queues or []
+for model_id in MODEL_IDS:
+    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
+    app.conf.task_queues.append(Queue(queue))
 
 
-@app.post("/deforum/")
+@worker_init.connect
+def init_worker(**kwargs):
+    for chkpt in MODEL_IDS:
+        load_deforum(chkpt)
+
+
+@app.task(name="deforum")
 @gooey_gpu.endpoint
-def deforum(
-    request: Request, pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs
-):
+def deforum(pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs):
     # init args
     args = deforum_script.DeforumArgs(batch_name=str(uuid.uuid1()))
     args.seed = pipeline.seed
@@ -27,7 +40,8 @@ def deforum(
         setattr(anim_args, k, v)
     try:
         # run inference
-        args, anim_args = run_deforum(pipeline=pipeline, args=args, anim_args=anim_args)
+        root = load_deforum(pipeline.model_id)
+        deforum_script.run(root, args, anim_args)
         # generate video
         vid_path = deforum_script.create_video(args, anim_args)
         with open(vid_path, "rb") as f:
@@ -46,25 +60,12 @@ def deforum(
         return
 
 
-@gooey_gpu.gpu_task
-def run_deforum(*, pipeline: PipelineInfo, args, anim_args):
-    root = load_deforum(pipeline)
-    # with gooey_gpu.use_models(root.model):
-    deforum_script.run(root, args, anim_args)
-    return args, anim_args
-
-
-_deforum_cache = {}
-
-
-def load_deforum(pipeline):
-    try:
-        root = _deforum_cache[pipeline.model_id]
-    except KeyError:
-        root = deforum_script.Root()
-        root.map_location = gooey_gpu.DEVICE_ID
-        root.model_checkpoint = pipeline.model_id
-        deforum_script.setup(root)
-        _deforum_cache[pipeline.model_id] = root
-        root.model.to(gooey_gpu.DEVICE_ID)
+@lru_cache
+def load_deforum(chkpt: str):
+    print(f"Loading deforum model {chkpt!r}...")
+    root = deforum_script.Root()
+    root.map_location = gooey_gpu.DEVICE_ID
+    root.model_checkpoint = chkpt
+    deforum_script.setup(root)
+    root.model.to(gooey_gpu.DEVICE_ID)
     return root
