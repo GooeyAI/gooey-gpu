@@ -31,6 +31,9 @@ docker run -it --rm \
     vasista22/whisper-hindi-large-v2
   " \
   -e SD_MODEL_IDS="
+    runwayml/stable-diffusion-v1-5
+    stabilityai/stable-diffusion-2-1
+    Lykon/DreamShaper
   " \
   -e CONTROLNET_MODEL_IDS="
     lllyasviel/sd-controlnet-canny
