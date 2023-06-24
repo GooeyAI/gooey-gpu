@@ -1,27 +1,54 @@
-Create a cluster - https://console.cloud.google.com/kubernetes/add
+# Cluster Setup and Deployments
 
-Add gpu node pool
+Follow these steps to create a cluster, add GPU nodes, install NVIDIA drivers, deploy RabbitMQ and Redis, and access deployments.
 
-Install nvidia drivers (newer version) - https://cloud.google.com/kubernetes-engine/docs/how-to/gpus#installing_drivers
+## Create a Cluster
 
-Deploy rabbitmq - https://console.cloud.google.com/kubernetes/list/overview?project=dara-c1b52
+1. Visit [Google Cloud Console](https://console.cloud.google.com/kubernetes/add) and create a cluster.
 
-Deploy redis - https://console.cloud.google.com/marketplace/kubernetes/config/google/redis-ha?version=7.0&project=dara-c1b52
+## Add GPU Node Pool
 
-create your `values.yaml` using the example `values.example.yaml`
+2. Add a GPU node pool to your cluster.
 
-Deploy using helm - 
+## Install NVIDIA Drivers (newer version)
+
+3. Install NVIDIA drivers in your cluster by following the [official guide](https://cloud.google.com/kubernetes-engine/docs/how-to/gpus#installing_drivers).
+
+## Deploy RabbitMQ
+
+4. Deploy RabbitMQ using the [Google Cloud Marketplace for RabbitMQ](https://console.cloud.google.com/marketplace/kubernetes/config/google/rabbitmq).
+
+## Deploy Redis
+
+5. Deploy Redis by using [Google Cloud Marketplace for Redis](https://console.cloud.google.com/marketplace/kubernetes/config/google/redis-ha).
+
+## Create Values.yaml
+
+6. Create your `values.yaml` file using the example `values.example.yaml`.
+
+## Deploy Using Helm
+
+7. Use Helm to deploy with the following command:
+
 ```bash
 helm install gooey-gpu-1 chart/ -f values.yaml
 ```
 
-To access this outside the k8s cluster, but from another GCP VM inside the same VPC, 
-create internal passthrough load balancer services for rabbitmq and redis - https://cloud.google.com/kubernetes-engine/docs/how-to/internal-load-balancing#subsetting
-[ilb_svc.yaml](/k8s/ilb_svc.yaml)
+---
 
-To access this from your dev machine us k8s port forwarding - https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster
-(replace `rabbitmq-1-rabbitmq-0` with whatever `kubectl get pod` shows for rabbitmq & same for redis)
+## Access Deployments
+
+### Inside VPC (GCP VM)
+
+- Create internal passthrough load balancer services for RabbitMQ and Redis by following the [official guide on subsetting](https://cloud.google.com/kubernetes-engine/docs/how-to/internal-load-balancing#subsetting).
+- Use the provided `ilb_svc.yaml` file: [ilb_svc.yaml](/k8s/ilb_svc.yaml)
+
+### From Your Dev Machine
+
+- Access deployments from your dev machine using Kubernetes port forwarding as described in the [official documentation](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster).
+
+- Replace `rabbitmq-1-rabbitmq-0` and `redis-ha-1-server-0` with whatever `kubectl get pod` shows for RabbitMQ and Redis.
+
 ```
-kubectl port-forward rabbitmq-1-rabbitmq-0 5672:5672
-kubectl port-forward redis-ha-1-server-0 6379:6379
+kubectl port-forward rabbitmq-1-rabbitmq-0 15674:15672 5674:5672 & kubectl port-forward redis-ha-1-server-0 63791:6379
 ```

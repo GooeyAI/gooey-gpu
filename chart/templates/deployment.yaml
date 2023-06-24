@@ -63,16 +63,3 @@ spec:
         persistentVolumeClaim:
           claimName: "{{ $.Release.Name }}-pvc"
 {{- end }}
-
-{{/*---*/}}
-{{/*apiVersion: "v1"*/}}
-{{/*kind: "ConfigMap"*/}}
-{{/*metadata:*/}}
-{{/*  name: "{{ .Release.Name }}-config"*/}}
-{{/*  namespace: "default"*/}}
-{{/*  labels:*/}}
-{{/*    app: "{{ include "common.name" . }}"*/}}
-{{/*data:*/}}
-{{/*  BROKER_URL: "pyamqp://rabbit:XweifafT2pvz@rabbitmq-1-rabbitmq-svc:5672/"*/}}
-{{/*  RESULT_BACKEND: "redis://:C8WV9uS4VcQBhYdo5YqAdvbuTCYXgNSjctTU74Y8ftXh2quJXZiQ7uBr5ZXvM4KoUpW23Q8grLh2xQ1WFMVuZnJWtEiDfKjXd2fTJmiKDkrAhDXwQNM1CLx1SZtH9Ech@redis-ha-1"*/}}
-{{/*---*/}}

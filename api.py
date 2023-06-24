@@ -52,16 +52,14 @@ class ControlNetPipelineInfo(PipelineInfo):
 
 class ControlNetInputs(DiffusersInputs):
     image: typing.List[str]
+    controlnet_conditioning_scale: float = 1.0
 
 
-class ControlNetImg2ImgInputs(DiffusersInputs):
-    image: typing.List[str]
+class ControlNetImg2ImgInputs(ControlNetInputs):
     control_image: typing.List[str]
 
 
-class ControlNetInpaintInputs(DiffusersInputs):
-    image: typing.List[str]
-    control_image: typing.List[str]
+class ControlNetInpaintInputs(ControlNetInputs):
     mask_image: typing.List[str]
 
 

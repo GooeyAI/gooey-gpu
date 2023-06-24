@@ -12,7 +12,7 @@ from api import PipelineInfo, WhisperInputs, AsrOutput
 from celeryconfig import app
 
 QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ["MODEL_IDS"].split()
+MODEL_IDS = os.environ["WHISPER_MODEL_IDS"].split()
 
 app.conf.task_queues = app.conf.task_queues or []
 for model_id in MODEL_IDS:

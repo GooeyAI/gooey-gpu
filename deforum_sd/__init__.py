@@ -13,7 +13,7 @@ from celeryconfig import app
 from deforum_sd import deforum_script
 
 QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ["MODEL_IDS"].split()
+MODEL_IDS = os.environ["DEFORUM_MODEL_IDS"].split()
 
 app.conf.task_queues = app.conf.task_queues or []
 for model_id in MODEL_IDS:

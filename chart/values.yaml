@@ -39,7 +39,7 @@ deployments:
         common.diffusion
         common.controlnet
       CONTROLNET_MODEL_IDS: *controlnetModelIds
-      MODEL_IDS: |-
+      SD_MODEL_IDS: |-
         runwayml/stable-diffusion-v1-5
         stabilityai/stable-diffusion-2-1
         Lykon/DreamShaper
@@ -55,7 +55,7 @@ deployments:
         common.diffusion
         common.controlnet
       CONTROLNET_MODEL_IDS: *controlnetModelIds
-      MODEL_IDS: |-
+      SD_MODEL_IDS: |-
         wavymulder/Analog-Diffusion
         prompthero/openjourney
         prompthero/openjourney-v2
@@ -71,7 +71,7 @@ deployments:
         common.diffusion
         common.controlnet
       CONTROLNET_MODEL_IDS: *controlnetModelIds
-      MODEL_IDS: |-
+      SD_MODEL_IDS: |-
         dreamlike-art/dreamlike-photoreal-2.0
         devxpy/rodent-diffusion-1-5
         darkstorm2150/Protogen_v5.3_Official_Release
@@ -86,7 +86,7 @@ deployments:
     env:
       IMPORTS: |-
         common.diffusion
-      MODEL_IDS: |-
+      SD_MODEL_IDS: |-
         timbrooks/instruct-pix2pix
   - name: "common-diffusion-upscale"
     image: *commonImg
@@ -98,7 +98,7 @@ deployments:
     env:
       IMPORTS: |-
         common.diffusion
-      MODEL_IDS: |-
+      SD_MODEL_IDS: |-
         stabilityai/stable-diffusion-x4-upscaler
   - name: "deforum-sd-1"
     image: *deforumImg
@@ -112,7 +112,7 @@ deployments:
     env:
       IMPORTS: |-
         deforum_sd
-      MODEL_IDS: |-
+      DEFORUM_MODEL_IDS: |-
         Protogen_V2.2.ckpt
 #  - name: "common-whisper"
 #    image: *commonImg
@@ -121,7 +121,7 @@ deployments:
 #    env:
 #      IMPORTS: |-
 #        common.whisper
-#      MODEL_IDS: |-
+#      WHISPER_MODEL_IDS: |-
 #        openai/whisper-large-v2
 #        vasista22/whisper-telugu-large-v2
 #        vasista22/whisper-hindi-large-v2
