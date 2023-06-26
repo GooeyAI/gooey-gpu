@@ -4,10 +4,12 @@ To save code to the vm, use either `rsync` or [JetBrains Deployment Tutorial](ht
 
 ## Port Forwarding
 
-Port forward your local redis & rabbitmq installs to the vm:
+Port forward the redis & rabbitmq ports from the vm to your local machine:
+
+(note how we use ports `6374` and `5674` to avoid conflicts with local redis and rabbitmq)
 
 ```bash
-gcloud compute ssh --zone <zone> <vm> -- -vN -R 6379:localhost:6379 -R 5672:localhost:5672
+gcloud compute ssh --zone <zone> <vm> -- -vN -L 6374:localhost:6379 -L 5674:localhost:5672
 ```
 
 ## Set Hugging Face Hub Token
