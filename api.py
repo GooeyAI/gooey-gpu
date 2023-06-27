@@ -46,13 +46,15 @@ class InstructPix2PixInputs(DiffusersInputs):
 
 
 class ControlNetPipelineInfo(PipelineInfo):
-    controlnet_model_id: str
+    controlnet_model_ids: str | typing.List[str]
     disable_preprocessing: bool = False
 
 
 class ControlNetInputs(DiffusersInputs):
-    image: typing.List[str]
-    controlnet_conditioning_scale: float = 1.0
+    image: str | typing.List[str]
+    controlnet_conditioning_scale: float | typing.List[float] = 1.0
+    eta: float = 0
+    guess_mode: bool = False
 
 
 class ControlNetImg2ImgInputs(ControlNetInputs):
