@@ -40,34 +40,33 @@ def init(**kwargs):
 @app.task(name="diffusion.controlnet")
 @gooey_gpu.endpoint
 def controlnet(pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs):
-    image = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
-    width = image[0].width
-    height = image[0].height
+    if type(inputs.image) == str:
+        inputs.image = [inputs.image]
+    if type(pipeline.controlnet_model_ids) == str:
+        pipeline.controlnet_model_ids = [pipeline.controlnet_model_ids]
+    images = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
+    width = images[0].width
+    height = images[0].height
     if not pipeline.disable_preprocessing:
         for idx, (im, controlnet_model_id) in enumerate(
-            zip(image, pipeline.controlnet_model_id)
+            zip(images, pipeline.controlnet_model_ids)
         ):
-            try:
-                preprocessor = CONTROLNET_PREPROCESSORS[pipeline.controlnet_model_id]
-            except KeyError:
-                pass
-            else:
-                image[idx] = preprocessor(im)
-    controlnet_model = load_controlnet_model(pipeline.controlnet_model_id)
-    # with gooey_gpu.use_models(controlnet_model):
-    # controlnet_model = ControlNetModel.from_pretrained(
-    #     pipeline.controlnet_model_id, torch_dtype=torch.float16
-    # ).to(gooey_gpu.DEVICE_ID)
+            if controlnet_model_id in CONTROLNET_PREPROCESSORS:
+                preprocessor = CONTROLNET_PREPROCESSORS[controlnet_model_id]
+                images[idx] = preprocessor(im)
+    controlnet_models = [
+        load_controlnet_model(model_id) for model_id in pipeline.controlnet_model_ids
+    ]
     return predict_and_upload(
         pipe_cls=StableDiffusionControlNetPipeline,
         pipeline=pipeline,
         inputs=inputs,
         inputs_extra=dict(
-            image=image,
+            image=images,
             width=width,
             height=height,
         ),
-        extra_components={"controlnet": controlnet_model},
+        extra_components={"controlnet": controlnet_models},
     )
 
 

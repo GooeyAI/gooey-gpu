@@ -179,7 +179,7 @@ R = typing.TypeVar("R")
 
 
 class Shared:
-    task_registry: dict[str, typing.Callable] = {}
+    task_registry: typing.Dict[str, typing.Callable] = {}
     gpu_pool: Pool
 
 
@@ -235,7 +235,7 @@ class GpuFuncException(Exception):
 
 def download_images(
     urls: typing.List[str],
-    max_size: (int, int) = None,
+    max_size: typing.Tuple[int, int] = None,
     mode: str = "RGB",
 ) -> typing.List[PIL.Image.Image]:
     def fn(url):
@@ -246,7 +246,7 @@ def download_images(
 
 def download_image(
     url: str,
-    max_size: (int, int) = None,
+    max_size: typing.Tuple[int, int] = None,
     mode: str = "RGB",
 ) -> PIL.Image.Image:
     im_bytes = requests.get(url).content
@@ -257,7 +257,9 @@ def download_image(
     return im_pil
 
 
-def downscale_img(im_pil: PIL.Image.Image, max_size: (int, int)) -> PIL.Image.Image:
+def downscale_img(
+    im_pil: PIL.Image.Image, max_size: typing.Tuple[int, int]
+) -> PIL.Image.Image:
     downscale_factor = get_downscale_factor(im_size=im_pil.size, max_size=max_size)
     if downscale_factor:
         im_pil = PIL.ImageOps.scale(im_pil, downscale_factor)
@@ -265,7 +267,9 @@ def downscale_img(im_pil: PIL.Image.Image, max_size: (int, int)) -> PIL.Image.Im
     return im_pil
 
 
-def get_downscale_factor(*, im_size: (int, int), max_size: (int, int)) -> float | None:
+def get_downscale_factor(
+    *, im_size: typing.Tuple[int, int], max_size: typing.Tuple[int, int]
+) -> typing.Optional[float]:
     downscale_factor = math.sqrt(
         (max_size[0] * max_size[1]) / (im_size[0] * im_size[1])
     )
@@ -275,7 +279,7 @@ def get_downscale_factor(*, im_size: (int, int), max_size: (int, int)) -> float 
         return None
 
 
-def upload_images(images: list[PIL.Image.Image], upload_urls: list[str]):
+def upload_images(images: typing.List[PIL.Image.Image], upload_urls: typing.List[str]):
     apply_parallel(upload_image, images, upload_urls)
 
 
