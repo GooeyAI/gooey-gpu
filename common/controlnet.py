@@ -40,9 +40,9 @@ def init(**kwargs):
 @app.task(name="diffusion.controlnet")
 @gooey_gpu.endpoint
 def controlnet(pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs):
-    if type(inputs.image) == str:
+    if isinstance(inputs.image, str):
         inputs.image = [inputs.image]
-    if type(pipeline.controlnet_model_ids) == str:
+    if isinstance(pipeline.controlnet_model_ids, str):
         pipeline.controlnet_model_ids = [pipeline.controlnet_model_ids]
     images = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
     width = images[0].width
