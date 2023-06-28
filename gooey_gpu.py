@@ -240,10 +240,6 @@ def download_images(
     mode: str = "RGB",
 ) -> typing.List[PIL.Image.Image]:
     def fn(url):
-        if url[: len("data:image/png;base64,")] == "data:image/png;base64,":
-            return PIL.Image.open(
-                io.BytesIO(base64.b64decode(url[len("data:image/png;base64,") :]))
-            )
         return download_image(url, max_size, mode)
 
     return list(map_parallel(fn, urls))
