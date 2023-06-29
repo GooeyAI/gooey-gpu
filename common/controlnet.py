@@ -48,16 +48,17 @@ def controlnet(pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs):
     height = inputs.height or images[0].height
     if inputs.image:
         images = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
+        if not pipeline.disable_preprocessing:
+            for idx, (im, controlnet_model_id) in enumerate(
+                zip(images, pipeline.controlnet_model_ids)
+            ):
+                if controlnet_model_id in CONTROLNET_PREPROCESSORS:
+                    preprocessor = CONTROLNET_PREPROCESSORS[controlnet_model_id]
+                    images[idx] = preprocessor(im)
     else:
         images = [PIL.Image.new("RGB", (width, height), (0, 0, 0))]
-        inputs.controlnet_conditioning_scale = 0.0
-    if not pipeline.disable_preprocessing:
-        for idx, (im, controlnet_model_id) in enumerate(
-            zip(images, pipeline.controlnet_model_ids)
-        ):
-            if controlnet_model_id in CONTROLNET_PREPROCESSORS:
-                preprocessor = CONTROLNET_PREPROCESSORS[controlnet_model_id]
-                images[idx] = preprocessor(im)
+        pipeline.controlnet_model_ids = [CONTROLNET_MODEL_IDS[0]]
+        inputs.controlnet_conditioning_scale = [0.0]
     controlnet_models = [
         load_controlnet_model(model_id) for model_id in pipeline.controlnet_model_ids
     ]
