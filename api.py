@@ -52,6 +52,8 @@ class ControlNetPipelineInfo(PipelineInfo):
 
 class ControlNetInputs(DiffusersInputs):
     image: str | typing.List[str]
+    width: int
+    height: int
     controlnet_conditioning_scale: float | typing.List[float] = 1.0
     eta: float = 0
     guess_mode: bool = False
