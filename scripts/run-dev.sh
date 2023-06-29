@@ -46,9 +46,6 @@ docker run -it --rm \
     lllyasviel/sd-controlnet-seg
     lllyasviel/control_v11p_sd15_inpaint
     lllyasviel/control_v11f1e_sd15_tile
-    DionTimmer/controlnet_qrcode-control_v1p_sd15
-    DionTimmer/controlnet_qrcode-control_v11p_sd21
-    ioclab/control_v1u_sd15_illumination
     ioclab/control_v1p_sd15_brightness
   " \
   --net host \
