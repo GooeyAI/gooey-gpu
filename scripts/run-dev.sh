@@ -19,11 +19,15 @@ docker rm -f $IMG || true
 docker run -it --rm \
   --name $IMG \
   -e IMPORTS="
-    common.diffusion
-    common.controlnet
+    common.embeddings
   " \
   -e DEFORUM_MODEL_IDS="
     Protogen_V2.2.ckpt
+  "\
+  -e EMBEDDING_MODEL_IDS="
+    intfloat/e5-large-v2
+    intfloat/e5-base-v2
+    intfloat/multilingual-e5-base
   "\
   -e WHISPER_MODEL_IDS="
     openai/whisper-large-v2
@@ -51,7 +55,7 @@ docker run -it --rm \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
   -v $PWD/checkpoints:/src/checkpoints \
-  -v $HOME/.cache/gooey-gpu/checkpoints:/root/.cache/gooey-gpu/checkpoints \
+  -v $HOME/.cache/gooey-gpu/:/root/.cache/gooey-gpu/ \
   -v $HOME/.cache/huggingface:/root/.cache/huggingface \
   -v $HOME/.cache/torch:/root/.cache/torch \
   -v $HOME/.cache/suno:/root/.cache/suno \

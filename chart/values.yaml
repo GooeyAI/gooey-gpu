@@ -13,7 +13,7 @@ persistence:
 storageClass:
   defaultClass: true
 
-commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:c8a3503d48040251724c8c5a1bdf15b0d87ce0a563fac158e6c404787bce3d71"
+commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:9995956025fcb2ae6ab6b8da9eeb1287ed782ccb72d465b82f1dbd981fa16b3e"
 deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
 
 controlnetModelIds: &controlnetModelIds |-
@@ -102,28 +102,111 @@ deployments:
         common.diffusion
       SD_MODEL_IDS: |-
         stabilityai/stable-diffusion-x4-upscaler
+
   - name: "deforum-sd-1"
     image: *deforumImg
-    replicas: 4
+    replicas: 15
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-a100-80gb"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "10"
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
       memory: "15Gi"
       cpu: "1"
     env:
       IMPORTS: |-
         deforum_sd
-      DEFORUM_MODEL_IDS: |-
+      MODEL_IDS: |-
         Protogen_V2.2.ckpt
-#  - name: "common-whisper"
-#    image: *commonImg
-#    nodeSelector:
-#      cloud.google.com/gke-accelerator: nvidia-l4
-#    env:
-#      IMPORTS: |-
-#        common.whisper
-#      WHISPER_MODEL_IDS: |-
-#        openai/whisper-large-v2
-#        vasista22/whisper-telugu-large-v2
-#        vasista22/whisper-hindi-large-v2
+
+  - name: "common-whisper-short"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        openai/whisper-large-v2
+  - name: "common-whisper-short-telugu"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-telugu-large-v2
+  - name: "common-whisper-short-hindi"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+
+  - name: "common-whisper-long"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        openai/whisper-large-v2
+  - name: "common-whisper-long-indic"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-telugu-large-v2
+        vasista22/whisper-hindi-large-v2
+
+  - name: "common-embeddings-1"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:34f26d4d8919f841b7ba06d7ef78e1aeda4dad99cd658a26e399730896e3bacb"
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      IMPORTS: |-
+        common.embeddings
+      EMBEDDING_MODEL_IDS: |-
+        intfloat/e5-large-v2
+        intfloat/e5-base-v2
+        intfloat/multilingual-e5-base
+        intfloat/multilingual-e5-large
