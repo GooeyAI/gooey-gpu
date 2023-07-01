@@ -40,27 +40,23 @@ def init(**kwargs):
 @app.task(name="diffusion.controlnet")
 @gooey_gpu.endpoint
 def controlnet(pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs):
-    if isinstance(inputs.image, str):
-        inputs.image = [inputs.image]
-    if isinstance(pipeline.controlnet_model_ids, str):
-        pipeline.controlnet_model_ids = [pipeline.controlnet_model_ids]
-    width = inputs.width or images[0].width
-    height = inputs.height or images[0].height
-    if inputs.image:
-        images = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
-        if not pipeline.disable_preprocessing:
-            for idx, (im, controlnet_model_id) in enumerate(
-                zip(images, pipeline.controlnet_model_ids)
-            ):
-                if controlnet_model_id in CONTROLNET_PREPROCESSORS:
-                    preprocessor = CONTROLNET_PREPROCESSORS[controlnet_model_id]
-                    images[idx] = preprocessor(im)
-    else:
-        images = [PIL.Image.new("RGB", (width, height), (0, 0, 0))]
-        pipeline.controlnet_model_ids = [CONTROLNET_MODEL_IDS[0]]
-        inputs.controlnet_conditioning_scale = [0.0]
+    if isinstance(pipeline.controlnet_model_id, str):
+        pipeline.controlnet_model_id = [pipeline.controlnet_model_id]
+    images = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
+    width = images[0].width
+    height = images[0].height
+    if not pipeline.disable_preprocessing:
+        for idx, (im, controlnet_model_id) in enumerate(
+            zip(images, pipeline.controlnet_model_id)
+        ):
+            try:
+                preprocessor = CONTROLNET_PREPROCESSORS[controlnet_model_id]
+            except KeyError:
+                pass
+            else:
+                images[idx] = preprocessor(im)
     controlnet_models = [
-        load_controlnet_model(model_id) for model_id in pipeline.controlnet_model_ids
+        load_controlnet_model(model_id) for model_id in pipeline.controlnet_model_id
     ]
     return predict_and_upload(
         pipe_cls=StableDiffusionControlNetPipeline,
