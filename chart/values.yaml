@@ -13,7 +13,7 @@ persistence:
 storageClass:
   defaultClass: true
 
-commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:9995956025fcb2ae6ab6b8da9eeb1287ed782ccb72d465b82f1dbd981fa16b3e"
+commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:ea381b59ce15a862998df6b8711ffc21d7ea6fcda3ed3b5ec2cee49862afddbe"
 deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
 
 controlnetModelIds: &controlnetModelIds |-
@@ -195,7 +195,7 @@ deployments:
         vasista22/whisper-hindi-large-v2
 
   - name: "common-embeddings-1"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:34f26d4d8919f841b7ba06d7ef78e1aeda4dad99cd658a26e399730896e3bacb"
+    image: *commonImg
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-l4"

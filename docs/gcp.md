@@ -50,5 +50,5 @@ helm install gooey-gpu-1 chart/ -f values.yaml
 - Replace `rabbitmq-1-rabbitmq-0` and `redis-ha-1-server-0` with whatever `kubectl get pod` shows for RabbitMQ and Redis.
 
 ```
-kubectl port-forward rabbitmq-1-rabbitmq-0 15674:15672 5674:5672 & kubectl port-forward redis-ha-1-server-0 63791:6379
+kubectl port-forward rabbitmq-1-rabbitmq-0 15674:15672 5674:5672 & kubectl port-forward redis-ha-1-server-0 6374:6379
 ```
