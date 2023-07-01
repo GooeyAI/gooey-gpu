@@ -44,7 +44,6 @@ docker run -it --rm \
     lllyasviel/sd-controlnet-openpose
     lllyasviel/sd-controlnet-scribble
     lllyasviel/sd-controlnet-seg
-    lllyasviel/control_v11p_sd15_inpaint
     lllyasviel/control_v11f1e_sd15_tile
     ioclab/control_v1p_sd15_brightness
   " \
