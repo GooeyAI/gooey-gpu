@@ -34,12 +34,15 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
     audio = requests.get(inputs.audio).content
     pipe = load_pipe(pipeline.model_id)
 
-    generate_kwargs = {}
+    kwargs = {}
+    if inputs.return_timestamps:
+        kwargs["return_timestamps"] = True
     if inputs.language:
-        generate_kwargs["forced_decoder_ids"] = pipe.tokenizer.get_decoder_prompt_ids(
-            task=inputs.task, language=inputs.language
+        kwargs["generate_kwargs"] = dict(
+            forced_decoder_ids=pipe.tokenizer.get_decoder_prompt_ids(
+                task=inputs.task, language=inputs.language
+            )
         )
-
     # see https://github.com/huggingface/transformers/issues/24707
     old_postprocess = pipe.postprocess
     if inputs.decoder_kwargs:
@@ -58,12 +61,11 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
 
     prediction = pipe(
         audio,
-        return_timestamps=inputs.return_timestamps,
-        generate_kwargs=generate_kwargs,
         # see https://colab.research.google.com/drive/1rS1L4YSJqKUH_3YxIQHBI982zso23wor#scrollTo=Ca4YYdtATxzo&line=5&uniqifier=1
         chunk_length_s=30,
         stride_length_s=[6, 0],
         batch_size=16,
+        **kwargs,
     )
 
     if inputs.decoder_kwargs:

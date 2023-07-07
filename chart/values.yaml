@@ -13,7 +13,7 @@ persistence:
 storageClass:
   defaultClass: true
 
-commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:ea381b59ce15a862998df6b8711ffc21d7ea6fcda3ed3b5ec2cee49862afddbe"
+commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:4b9c36203dec15de7637cf11366890b307e8911de08eca0ed3cebded29d684c1"
 deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
 
 controlnetModelIds: &controlnetModelIds |-
@@ -34,6 +34,7 @@ deployments:
     image: *commonImg
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-l4"
+    replicas: 2
     limits:
       memory: "12Gi"
       cpu: "3"
@@ -164,6 +165,21 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         vasista22/whisper-hindi-large-v2
+  - name: "common-asr-short"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
 
   - name: "common-whisper-long"
     image: *commonImg
@@ -179,6 +195,8 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         openai/whisper-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+
   - name: "common-whisper-long-indic"
     image: *commonImg
     replicas: 1
