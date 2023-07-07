@@ -102,6 +102,7 @@ class WhisperInputs(BaseModel):
     task: typing.Literal["translate", "transcribe"] = "transcribe"
     language: str = None
     return_timestamps: bool = False
+    decoder_kwargs: dict = None
 
 
 class NemoASRInputs(BaseModel):

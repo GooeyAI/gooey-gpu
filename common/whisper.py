@@ -1,3 +1,4 @@
+import numpy as np
 import os
 from functools import lru_cache
 
@@ -32,11 +33,29 @@ def init(**kwargs):
 def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
     audio = requests.get(inputs.audio).content
     pipe = load_pipe(pipeline.model_id)
+
     generate_kwargs = {}
     if inputs.language:
         generate_kwargs["forced_decoder_ids"] = pipe.tokenizer.get_decoder_prompt_ids(
             task=inputs.task, language=inputs.language
         )
+
+    # see https://github.com/huggingface/transformers/issues/24707
+    old_postprocess = pipe.postprocess
+    if inputs.decoder_kwargs:
+
+        def postprocess(model_outputs):
+            final_items = []
+            key = "tokens"
+            for outputs in model_outputs:
+                items = outputs[key].numpy()
+                final_items.append(items)
+            items = np.concatenate(final_items, axis=1)
+            items = items.squeeze(0)
+            return {"text": pipe.tokenizer.decode(items, **inputs.decoder_kwargs)}
+
+        pipe.postprocess = postprocess
+
     prediction = pipe(
         audio,
         return_timestamps=inputs.return_timestamps,
@@ -46,12 +65,16 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
         stride_length_s=[6, 0],
         batch_size=16,
     )
+
+    if inputs.decoder_kwargs:
+        pipe.postprocess = old_postprocess
+
     return prediction
 
 
 @lru_cache
 def load_pipe(model_id: str):
-    print(f"Loading whisper model {model_id!r}...")
+    print(f"Loading asr model {model_id!r}...")
     pipe = transformers.pipeline(
         "automatic-speech-recognition",
         model=model_id,
