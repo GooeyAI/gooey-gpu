@@ -62,9 +62,9 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
     prediction = pipe(
         audio,
         # see https://colab.research.google.com/drive/1rS1L4YSJqKUH_3YxIQHBI982zso23wor#scrollTo=Ca4YYdtATxzo&line=5&uniqifier=1
-        chunk_length_s=30,
-        stride_length_s=[6, 0],
-        batch_size=16,
+        chunk_length_s=inputs.chunk_length_s,
+        stride_length_s=inputs.stride_length_s,
+        batch_size=inputs.batch_size,
         **kwargs,
     )
 

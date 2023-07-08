@@ -13,7 +13,7 @@ persistence:
 storageClass:
   defaultClass: true
 
-commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:4b9c36203dec15de7637cf11366890b307e8911de08eca0ed3cebded29d684c1"
+commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/common@sha256:51e0a5bb81e2475ad3dc782fa7b8c1074002be0733a8dc869c047eae9b46701a"
 deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
 
 controlnetModelIds: &controlnetModelIds |-

@@ -104,6 +104,10 @@ class WhisperInputs(BaseModel):
     return_timestamps: bool = False
     decoder_kwargs: dict = None
 
+    chunk_length_s: float = 30
+    stride_length_s: tuple[float, float] = (6, 0)
+    batch_size: int = 16
+
 
 class NemoASRInputs(BaseModel):
     audio: str
