@@ -19,7 +19,7 @@ docker rm -f $IMG || true
 docker run -it --rm \
   --name $IMG \
   -e IMPORTS="
-    common.embeddings
+    common.controlnet
   " \
   -e DEFORUM_MODEL_IDS="
     Protogen_V2.2.ckpt
