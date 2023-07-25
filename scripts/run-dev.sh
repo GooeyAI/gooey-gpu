@@ -50,7 +50,7 @@ docker run -it --rm \
     lllyasviel/sd-controlnet-seg
     lllyasviel/control_v11f1e_sd15_tile
     ioclab/control_v1p_sd15_brightness
-    monster-labs/control_v1p_sd15_qrcode_monster
+    monster-labs/control_v1p_sd15_qrcode_monster/tree/main/v2
   " \
   --net host \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
