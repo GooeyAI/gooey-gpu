@@ -81,9 +81,10 @@ deployments:
         darkstorm2150/Protogen_v5.3_Official_Release
   - name: "common-diffusion-4"
     image: *commonImg
+    replicas: 4
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-a100-80gb"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "10"
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
       memory: "15Gi"
       cpu: "1"
@@ -107,7 +108,7 @@ deployments:
 
   - name: "deforum-sd-1"
     image: *deforumImg
-    replicas: 15
+    replicas: 12
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
@@ -119,6 +120,21 @@ deployments:
         deforum_sd
       MODEL_IDS: |-
         Protogen_V2.2.ckpt
+
+  - name: "deforum-sd-epicdream"
+    image: *deforumImg
+    replicas: 3
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        deforum_sd
+      MODEL_IDS: |-
+        epicdream.safetensors
 
   - name: "common-whisper-short"
     image: *commonImg
