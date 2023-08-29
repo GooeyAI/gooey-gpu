@@ -35,9 +35,19 @@ docker run -it --rm \
     vasista22/whisper-hindi-large-v2
   " \
   -e SD_MODEL_IDS="
+    runwayml/stable-diffusion-v1-5
+    stabilityai/stable-diffusion-2-1
     Lykon/DreamShaper
   " \
   -e CONTROLNET_MODEL_IDS="
+    lllyasviel/sd-controlnet-canny
+    lllyasviel/sd-controlnet-depth
+    lllyasviel/sd-controlnet-hed
+    lllyasviel/sd-controlnet-mlsd
+    lllyasviel/sd-controlnet-normal
+    lllyasviel/sd-controlnet-openpose
+    lllyasviel/sd-controlnet-scribble
+    lllyasviel/sd-controlnet-seg
     lllyasviel/control_v11f1e_sd15_tile
     ioclab/control_v1p_sd15_brightness
     monster-labs/control_v1p_sd15_qrcode_monster/v2
