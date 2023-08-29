@@ -74,15 +74,16 @@ def controlnet(pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs):
 @lru_cache
 def load_controlnet_model(model_id: str) -> ControlNetModel:
     print(f"Loading ControlNet model {model_id}...")
-    if model_id.count("/") > 1:
-        # process subfolder to allow loading models not at root in huggingface directory
-        subfolder = "".join(model_id.split("/", 3)[2:])
-        model_id = model_id.replace("/" + subfolder, "")
-        model = ControlNetModel.from_pretrained(
-            model_id, torch_dtype=torch.float16, subfolder=subfolder
-        )
+    parts = model_id.split("/")
+    # split subfolder to allow loading models not at root in huggingface directory
+    if len(parts) > 2:
+        model_id = "/".join(parts[:2])
+        subfolder = "/".join(parts[2:])
     else:
-        model = ControlNetModel.from_pretrained(model_id, torch_dtype=torch.float16)
+        subfolder = ""
+    model = ControlNetModel.from_pretrained(
+        model_id, torch_dtype=torch.float16, subfolder=subfolder
+    )
     model = model.to(gooey_gpu.DEVICE_ID)
     return model
 
