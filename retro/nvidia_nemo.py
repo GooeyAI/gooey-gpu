@@ -17,7 +17,7 @@ app = APIRouter()
 def nemo_asr_api(pipeline: PipelineInfo, inputs: NemoASRInputs) -> AsrOutput:
     model_name = os.path.basename(pipeline.model_id)
     # get cached model path
-    model_path = os.path.join("/root/.cache/gooey-gpu/checkpoints", model_name)
+    model_path = os.path.join(gooey_gpu.CHECKPOINTS_DIR, model_name)
     # if not cached, download again
     if not os.path.exists(model_path):
         with open(model_path, "wb") as f:

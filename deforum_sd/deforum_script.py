@@ -6,6 +6,7 @@ import sys
 import time
 from base64 import b64encode
 from typing import Any
+import gooey_gpu
 
 from pydantic import BaseModel
 
@@ -36,7 +37,7 @@ from helpers.aesthetics import load_aesthetics_model
 
 # @markdown **Path Setup**
 class Root:
-    models_path = "/root/.cache/gooey-gpu/checkpoints"  # @param {type:"string"}
+    models_path = gooey_gpu.CHECKPOINTS_DIR  # @param {type:"string"}
     configs_path = "/src/deforum-stable-diffusion/configs"  # @param {type:"string"}
     output_path = "/src/output"  # @param {type:"string"}
     mount_google_drive = False  # @param {type:"boolean"}

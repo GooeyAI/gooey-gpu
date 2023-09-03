@@ -16,10 +16,12 @@ docker build . -f $VARIANT/Dockerfile -t $IMG
 docker tag $IMG us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/$VARIANT
 
 docker rm -f $IMG || true
-docker run -it --rm \
-  --name $IMG \
+docker run \
   -e IMPORTS="
-    common.controlnet
+    retro.wav2lip
+  " \
+  -e WAV2LIP_MODEL_IDS="
+    wav2lip_gan.pth
   " \
   -e DEFORUM_MODEL_IDS="
     Protogen_V2.2.ckpt
@@ -52,15 +54,13 @@ docker run -it --rm \
     ioclab/control_v1p_sd15_brightness
     monster-labs/control_v1p_sd15_qrcode_monster/v2
   " \
-  --net host \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
-  -v $PWD/checkpoints:/src/checkpoints \
-  -v $HOME/.cache/gooey-gpu/:/root/.cache/gooey-gpu/ \
+  -e HUGGING_FACE_HUB_TOKEN=$HUGGING_FACE_HUB_TOKEN \
+  -v $HOME/.cache/gooey-gpu:/root/.cache/gooey-gpu \
   -v $HOME/.cache/huggingface:/root/.cache/huggingface \
   -v $HOME/.cache/torch:/root/.cache/torch \
   -v $HOME/.cache/suno:/root/.cache/suno \
-  -e HUGGING_FACE_HUB_TOKEN=$HUGGING_FACE_HUB_TOKEN \
-  --runtime=nvidia --gpus all \
-  -m 14g \
+  --net host --runtime=nvidia --gpus all --memory 14g \
+  -it --rm --name $IMG \
   $IMG:latest

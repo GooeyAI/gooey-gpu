@@ -46,13 +46,13 @@ class InstructPix2PixInputs(DiffusersInputs):
 
 
 class ControlNetPipelineInfo(PipelineInfo):
-    controlnet_model_id: str | typing.List[str]
+    controlnet_model_id: typing.Union[str, typing.List[str]]
     disable_preprocessing: bool = False
 
 
 class ControlNetInputs(DiffusersInputs):
     image: typing.List[str]
-    controlnet_conditioning_scale: float | typing.List[float] = 1.0
+    controlnet_conditioning_scale: typing.Union[float, typing.List[float]] = 1.0
     eta: float = 0
     guess_mode: bool = False
 
@@ -105,7 +105,7 @@ class WhisperInputs(BaseModel):
     decoder_kwargs: dict = None
 
     chunk_length_s: float = 30
-    stride_length_s: tuple[float, float] = (6, 0)
+    stride_length_s: typing.Tuple[float, float] = (6, 0)
     batch_size: int = 16
 
 
@@ -114,10 +114,10 @@ class NemoASRInputs(BaseModel):
 
 
 class AsrOutputChunk(BaseModel):
-    timestamp: tuple[float, float]
+    timestamp: typing.Tuple[float, float]
     text: str
 
 
 class AsrOutput(BaseModel):
     text: str
-    chunks: list[AsrOutputChunk] = []
+    chunks: typing.List[AsrOutputChunk] = []

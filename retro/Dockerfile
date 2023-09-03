@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
 ENV PATH="/root/.pyenv/shims:/root/.pyenv/bin:$PATH"
 RUN curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash && \
-	pyenv install 3.10 && \
-	pyenv global 3.10
+	pyenv install 3.8 && \
+	pyenv global 3.8
 
 # copy to /src
 ENV WORKDIR /src
@@ -36,9 +36,14 @@ WORKDIR $WORKDIR
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	libgl1-mesa-glx \
 	ffmpeg \
+    libsndfile1 \
 	&& rm -rf /var/lib/apt/lists/*
-COPY backports/requirements.txt .
-RUN pip install Cython && pip install -r requirements.txt
+
+COPY retro/*.txt .
+RUN pip install --no-cache-dir cython \
+  && pip install --no-cache-dir -r requirements1.txt \
+  && pip install --no-cache-dir -r requirements2.txt \
+  && pip install --no-cache-dir git+https://github.com/elliottzheng/batch-face.git@master
 
 # copy sources
 COPY . .
@@ -46,4 +51,4 @@ COPY . .
 ENV PYTHONUNBUFFERED=1
 
 # run prediction server
-ENTRYPOINT uvicorn server:app --host 0.0.0.0 --port 5000
+ENTRYPOINT celery -A celeryconfig worker --loglevel=INFO --concurrency=1 -P threads
