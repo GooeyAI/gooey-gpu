@@ -3,6 +3,7 @@ import gc
 import inspect
 import io
 import math
+import mimetypes
 import os
 import threading
 import typing
@@ -214,3 +215,7 @@ def upload_audio(audio, url: str, rate: int = 16_000):
     # upload to given url
     r = requests.put(url, headers={"Content-Type": "audio/wav"}, data=audio_bytes)
     r.raise_for_status()
+
+
+# Add some missing mimetypes
+mimetypes.add_type("audio/wav", ".wav")

@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile
 from time import time
 
 import cv2
+import PIL.Image
 import numpy as np
 import torch
 from batch_face import RetinaFace
@@ -258,7 +259,7 @@ def main():
         raise ValueError("--face argument must be a valid path to video/image file")
 
     elif args.static:
-        frame = cv2.imread(args.face)
+        frame = cv2.cvtColor(np.array(PIL.Image.open(args.face)), cv2.COLOR_RGB2BGR)
 
         aspect_ratio = frame.shape[1] / frame.shape[0]
         frame = cv2.resize(
