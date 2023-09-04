@@ -14,7 +14,7 @@ storageClass:
   defaultClass: true
 
 commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:a1bc2859bd912def52cb52ae48dd3be4fedbdec712d47914ed783d81c20577cd"
-retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:a632ef3fd745f142e0f6fde3e6600157d0da2d9ac87edeb553c4a04dc0d021bd"
+retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:64457bd1984ec090776f91cb832bfe9ee7e0a0700a175abf2f78f47cbb7deaad"
 deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
 
 controlnetModelIds: &controlnetModelIds |-
@@ -253,8 +253,8 @@ deployments:
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-l4"
     limits:
-      memory: "12Gi"
-      cpu: "3"
+      memory: "15Gi"
+      cpu: "3.5"
     env:
       IMPORTS: |-
         retro.wav2lip

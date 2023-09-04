@@ -1,13 +1,10 @@
 import argparse
-import math
 import mimetypes
 import os
 import subprocess
-from tempfile import NamedTemporaryFile
-from time import time
 
-import cv2
 import PIL.Image
+import cv2
 import numpy as np
 import torch
 from batch_face import RetinaFace
@@ -15,7 +12,6 @@ from tqdm import tqdm
 
 import audio
 import gooey_gpu
-
 # from face_detect import face_rect
 from models import Wav2Lip
 
@@ -136,16 +132,14 @@ def face_detect(images):
     results = []
     pady1, pady2, padx1, padx2 = args.pads
 
-    s = time()
-
-    for image, rect in zip(images, face_rect(images)):
-        if rect is None:
-            # cv2.imwrite(
-            #     "temp/faulty_frame.jpg", image
-            # )  # check this frame where the face was not detected.
-            raise ValueError(
+    for image, faces in zip(images, detector(images)):
+        if not faces:
+            raise FaceNotFoundException(
                 "Face not detected! Ensure the video contains a face in all the frames."
             )
+
+        box, landmarks, score = faces[0]
+        rect = tuple(map(int, box))
 
         y1 = max(0, rect[1] - pady1)
         y2 = min(image.shape[0], rect[3] + pady2)
@@ -154,70 +148,21 @@ def face_detect(images):
 
         results.append([x1, y1, x2, y2])
 
-    print("face detect time:", time() - s)
-
     boxes = np.array(results)
-    if not args.nosmooth:
-        boxes = get_smoothened_boxes(boxes, T=5)
-    results = [
-        [image[y1:y2, x1:x2], (y1, y2, x1, x2)]
-        for image, (x1, y1, x2, y2) in zip(images, boxes)
-    ]
+    # if not args.nosmooth:
+    #     boxes = get_smoothened_boxes(boxes, T=5)
 
-    return results
+    return boxes
+    # results = [
+    #     [image[y1:y2, x1:x2], (y1, y2, x1, x2)]
+    #     for image, (x1, y1, x2, y2) in zip(images, boxes)
+    # ]
+    #
+    # return results
 
 
-def datagen(frames, mels):
-    img_batch, mel_batch, frame_batch, coords_batch = [], [], [], []
-
-    if args.box[0] == -1:
-        if not args.static:
-            face_det_results = face_detect(frames)  # BGR2RGB for CNN face detection
-        else:
-            face_det_results = face_detect([frames[0]])
-    else:
-        print("Using the specified bounding box instead of face detection...")
-        y1, y2, x1, x2 = args.box
-        face_det_results = [[f[y1:y2, x1:x2], (y1, y2, x1, x2)] for f in frames]
-
-    for i, m in enumerate(mels):
-        idx = 0 if args.static else i % len(frames)
-        frame_to_save = frames[idx].copy()
-        face, coords = face_det_results[idx].copy()
-
-        face = cv2.resize(face, (args.img_size, args.img_size))
-
-        img_batch.append(face)
-        mel_batch.append(m)
-        frame_batch.append(frame_to_save)
-        coords_batch.append(coords)
-
-        if len(img_batch) >= args.wav2lip_batch_size:
-            img_batch, mel_batch = np.asarray(img_batch), np.asarray(mel_batch)
-
-            img_masked = img_batch.copy()
-            img_masked[:, args.img_size // 2 :] = 0
-
-            img_batch = np.concatenate((img_masked, img_batch), axis=3) / 255.0
-            mel_batch = np.reshape(
-                mel_batch, [len(mel_batch), mel_batch.shape[1], mel_batch.shape[2], 1]
-            )
-
-            yield img_batch, mel_batch, frame_batch, coords_batch
-            img_batch, mel_batch, frame_batch, coords_batch = [], [], [], []
-
-    if len(img_batch) > 0:
-        img_batch, mel_batch = np.asarray(img_batch), np.asarray(mel_batch)
-
-        img_masked = img_batch.copy()
-        img_masked[:, args.img_size // 2 :] = 0
-
-        img_batch = np.concatenate((img_masked, img_batch), axis=3) / 255.0
-        mel_batch = np.reshape(
-            mel_batch, [len(mel_batch), mel_batch.shape[1], mel_batch.shape[2], 1]
-        )
-
-        yield img_batch, mel_batch, frame_batch, coords_batch
+class FaceNotFoundException(ValueError):
+    pass
 
 
 mel_step_size = 16
@@ -250,7 +195,7 @@ def load_model(path):
 
 
 def main():
-    args.img_size = 96
+    lip_size = 96
 
     face_mime_type = mimetypes.guess_type(args.face)[0] or ""
     args.static = "image/" in face_mime_type
@@ -258,55 +203,125 @@ def main():
     if not os.path.isfile(args.face):
         raise ValueError("--face argument must be a valid path to video/image file")
 
-    elif args.static:
+    if args.static:
+        input_stream = None
+        fps = args.fps
         frame = cv2.cvtColor(np.array(PIL.Image.open(args.face)), cv2.COLOR_RGB2BGR)
+        frame = resize_frame(frame)
+    else:
+        input_stream = cv2.VideoCapture(args.face)
+        fps = input_stream.get(cv2.CAP_PROP_FPS)
+        frame = None
 
-        aspect_ratio = frame.shape[1] / frame.shape[0]
-        frame = cv2.resize(
-            frame, (int(args.out_height * aspect_ratio), args.out_height)
+    ffproc = None
+
+    mel_chunks = get_mel_chunks(fps)
+    for idx in tqdm(range(0, len(mel_chunks), args.wav2lip_batch_size)):
+        if args.static:
+            frame_batch = [frame] * args.wav2lip_batch_size
+        else:
+            frame_batch = list(
+                read_n_frames(idx, input_stream, args.wav2lip_batch_size)
+            )
+
+        if idx == 0:
+            frame_h, frame_w = frame_batch[0].shape[:-1]
+            cmd_args = [
+                "ffmpeg",
+                "-pixel_format", "bgr24",
+                "-f", "rawvideo",
+                "-vcodec", "rawvideo",
+                "-s", f"{frame_w}x{frame_h}",
+                "-r", str(fps),
+                "-i", "pipe:0",
+                "-i", args.audio,
+                "-vcodec", "libx264",
+                "-preset", "ultrafast",
+                args.outfile,
+            ]  # fmt:skip
+            print("\t$ " + " ".join(cmd_args))
+            ffproc = subprocess.Popen(cmd_args, stdin=subprocess.PIPE)
+
+        mel_batch = mel_chunks[idx : idx + args.wav2lip_batch_size]
+        frame_batch = frame_batch[: len(mel_batch)]
+
+        coords_batch = face_detect(frame_batch)
+        img_batch = [
+            cv2.resize(image[y1:y2, x1:x2], (lip_size, lip_size))
+            for image, (x1, y1, x2, y2) in zip(frame_batch, coords_batch)
+        ]
+
+        img_batch = np.asarray(img_batch)
+        mel_batch = np.asarray(mel_batch)
+
+        img_masked = img_batch.copy()
+        img_masked[:, lip_size // 2 :] = 0
+
+        img_batch = np.concatenate((img_masked, img_batch), axis=3) / 255.0
+        mel_batch = np.reshape(
+            mel_batch, [len(mel_batch), mel_batch.shape[1], mel_batch.shape[2], 1]
         )
 
-        full_frames = [frame]
-        fps = args.fps
+        img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
+        mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)
+        with torch.no_grad():
+            pred = model(mel_batch, img_batch)
 
-    else:
-        video_stream = cv2.VideoCapture(args.face)
-        fps = video_stream.get(cv2.CAP_PROP_FPS)
+        pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.0
 
-        print("Reading video frames...")
+        for p, f, c in zip(pred, frame_batch, coords_batch):
+            x1, y1, x2, y2 = c
+            p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
 
-        full_frames = []
-        while 1:
-            still_reading, frame = video_stream.read()
-            if not still_reading:
-                video_stream.release()
-                break
+            f[y1:y2, x1:x2] = p
+            ffproc.stdin.write(f.tostring())
 
-            aspect_ratio = frame.shape[1] / frame.shape[0]
-            frame = cv2.resize(
-                frame, (int(args.out_height * aspect_ratio), args.out_height)
-            )
-            # if args.resize_factor > 1:
-            #     frame = cv2.resize(frame, (frame.shape[1]//args.resize_factor, frame.shape[0]//args.resize_factor))
+    if input_stream:
+        input_stream.release()
+    if ffproc:
+        ffproc.stdin.close()
+        ffproc.wait()
 
-            if args.rotate:
-                frame = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE)
 
-            y1, y2, x1, x2 = args.crop
-            if x2 == -1:
-                x2 = frame.shape[1]
-            if y2 == -1:
-                y2 = frame.shape[0]
+def read_n_frames(idx, video_stream, batch_size):
+    for _ in range(batch_size):
+        ret, frame = video_stream.read()
 
-            frame = frame[y1:y2, x1:x2]
+        if not ret:
+            if idx == 0:
+                raise ValueError("Video file contains no frames")
+            video_stream.release()
+            video_stream = cv2.VideoCapture(args.face)
+            _, frame = video_stream.read()
 
-            full_frames.append(frame)
+        frame = resize_frame(frame)
+        yield frame
 
-    print("Number of frames available for inference: " + str(len(full_frames)))
+        # if args.resize_factor > 1:
+        #     frame = cv2.resize(frame, (frame.shape[1]//args.resize_factor, frame.shape[0]//args.resize_factor))
+        # if args.rotate:
+        #     frame = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE)
+        # y1, y2, x1, x2 = args.crop
+        # if x2 == -1:
+        #     x2 = frame.shape[1]
+        # if y2 == -1:
+        #     y2 = frame.shape[0]
+        # frame = frame[y1:y2, x1:x2]
 
+
+def resize_frame(frame):
+    aspect_ratio = frame.shape[1] / frame.shape[0]
+    out_width = int(args.out_height * aspect_ratio)
+    if out_width % 2 != 0:
+        out_width -= 1
+    frame = cv2.resize(frame, (out_width, args.out_height))
+    return frame
+
+
+def get_mel_chunks(fps):
     wav = audio.load_wav(args.audio, 16000)
     mel = audio.melspectrogram(wav)
-    print(mel.shape)
+    print(f"{mel.shape=}")
 
     if np.isnan(mel.reshape(-1)).sum() > 0:
         raise ValueError(
@@ -324,61 +339,9 @@ def main():
         mel_chunks.append(mel[:, start_idx : start_idx + mel_step_size])
         i += 1
 
-    print("Length of mel chunks: {}".format(len(mel_chunks)))
+    print(f"{len(mel_chunks)=}")
 
-    full_frames = full_frames[: len(mel_chunks)]
-
-    batch_size = args.wav2lip_batch_size
-    gen = datagen(full_frames.copy(), mel_chunks)
-
-    with NamedTemporaryFile(suffix=".avi") as temp:
-        s = time()
-
-        for i, (img_batch, mel_batch, frames, coords) in enumerate(
-            tqdm(gen, total=int(np.ceil(float(len(mel_chunks)) / batch_size)))
-        ):
-            if i == 0:
-                frame_h, frame_w = full_frames[0].shape[:-1]
-                out = cv2.VideoWriter(
-                    temp.name,
-                    cv2.VideoWriter_fourcc(*"DIVX"),
-                    fps,
-                    (frame_w, frame_h),
-                )
-
-            img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(
-                device
-            )
-            mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(
-                device
-            )
-
-            with torch.no_grad():
-                pred = model(mel_batch, img_batch)
-
-            pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.0
-
-            for p, f, c in zip(pred, frames, coords):
-                y1, y2, x1, x2 = c
-                p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
-
-                f[y1:y2, x1:x2] = p
-                out.write(f)
-
-        out.release()
-
-        print("wav2lip prediction time:", time() - s)
-
-        cmd_args = [
-            "ffmpeg", "-y",
-            # "-vsync", "0", "-hwaccel", "cuda", "-hwaccel_output_format", "cuda",
-            "-i", temp.name,
-            "-i", args.audio,
-            # "-c:v", "h264_nvenc",
-            args.outfile,
-        ]  # fmt: skip
-        print("\t$ " + " ".join(cmd_args))
-        print(subprocess.check_output(cmd_args, encoding="utf-8"))
+    return mel_chunks
 
 
 model = detector = detector_model = None
@@ -400,22 +363,6 @@ def do_load(checkpoint_path):
     detector_model = detector.model
 
     print("Models loaded")
-
-
-face_batch_size = 64 * 8
-
-
-def face_rect(images):
-    num_batches = math.ceil(len(images) / face_batch_size)
-    prev_ret = None
-    for i in range(num_batches):
-        batch = images[i * face_batch_size : (i + 1) * face_batch_size]
-        all_faces = detector(batch)  # return faces list of all images
-        for faces in all_faces:
-            if faces:
-                box, landmarks, score = faces[0]
-                prev_ret = tuple(map(int, box))
-            yield prev_ret
 
 
 if __name__ == "__main__":

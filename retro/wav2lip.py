@@ -60,6 +60,7 @@ class Wav2LipInputs(BaseModel):
         description="Output video height. Best results are obtained at 480 or 720",
         default=480,
     )
+    batch_size: int = 256
 
 
 @app.task(name="wav2lip")
@@ -108,6 +109,7 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
             "--fps", inputs.fps,
             "--out_height", inputs.out_height,
             "--outfile", result_path,
+            "--wav2lip_batch_size", inputs.batch_size,
         ]  # fmt:skip
         if not inputs.smooth:
             args += ["--nosmooth"]
@@ -117,7 +119,7 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
 
         try:
             inference.main()
-        except ValueError as e:
+        except inference.FaceNotFoundException as e:
             print(f"-> Encountered error, skipping lipsync: {e}")
             args = [
                 "ffmpeg",
