@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 import audio
 import gooey_gpu
+
 # from face_detect import face_rect
 from models import Wav2Lip
 
@@ -400,7 +401,7 @@ def do_load(checkpoint_path):
     print("Models loaded")
 
 
-face_batch_size = 64 * 16
+face_batch_size = 64 * 8
 
 
 def face_rect(images):
