@@ -74,9 +74,9 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
         raise ValueError(f"Unsupported audio format {audio_mime_type!r}")
 
     with TemporaryDirectory() as tmpdir:
+        face_path = os.path.join(tmpdir, "face" + os.path.splitext(inputs.face)[1])
+        audio_path = os.path.join(tmpdir, "audio" + os.path.splitext(inputs.audio)[1])
         result_path = os.path.join(tmpdir, "result_voice.mp4")
-        face_path = os.path.join(tmpdir, "face.mp4")
-        audio_path = os.path.join(tmpdir, "audio.mp4")
 
         r = requests.get(inputs.face, allow_redirects=True)
         r.raise_for_status()

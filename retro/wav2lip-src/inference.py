@@ -1,23 +1,21 @@
 import argparse
 import math
+import mimetypes
 import os
-import platform
 import subprocess
+from tempfile import NamedTemporaryFile
+from time import time
 
 import cv2
 import numpy as np
 import torch
-from tempfile import NamedTemporaryFile
+from batch_face import RetinaFace
 from tqdm import tqdm
 
 import audio
 import gooey_gpu
-
 # from face_detect import face_rect
 from models import Wav2Lip
-
-from batch_face import RetinaFace
-from time import time
 
 parser = argparse.ArgumentParser(
     description="Inference code to lip-sync videos in the wild using Wav2Lip models"
@@ -252,14 +250,21 @@ def load_model(path):
 def main():
     args.img_size = 96
 
-    if os.path.isfile(args.face) and args.face.split(".")[1] in ["jpg", "png", "jpeg"]:
-        args.static = True
+    face_mime_type = mimetypes.guess_type(args.face)[0] or ""
+    args.static = "image/" in face_mime_type
 
     if not os.path.isfile(args.face):
         raise ValueError("--face argument must be a valid path to video/image file")
 
-    elif args.face.split(".")[1] in ["jpg", "png", "jpeg"]:
-        full_frames = [cv2.imread(args.face)]
+    elif args.static:
+        frame = cv2.imread(args.face)
+
+        aspect_ratio = frame.shape[1] / frame.shape[0]
+        frame = cv2.resize(
+            frame, (int(args.out_height * aspect_ratio), args.out_height)
+        )
+
+        full_frames = [frame]
         fps = args.fps
 
     else:
