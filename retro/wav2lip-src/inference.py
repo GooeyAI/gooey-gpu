@@ -12,7 +12,6 @@ from tqdm import tqdm
 
 import audio
 import gooey_gpu
-# from face_detect import face_rect
 from models import Wav2Lip
 
 parser = argparse.ArgumentParser(
@@ -220,9 +219,7 @@ def main():
         if args.static:
             frame_batch = [frame] * args.wav2lip_batch_size
         else:
-            frame_batch = list(
-                read_n_frames(idx, input_stream, args.wav2lip_batch_size)
-            )
+            frame_batch = list(read_n_frames(input_stream, args.wav2lip_batch_size))
 
         if idx == 0:
             frame_h, frame_w = frame_batch[0].shape[:-1]
@@ -283,16 +280,16 @@ def main():
         ffproc.wait()
 
 
-def read_n_frames(idx, video_stream, batch_size):
-    for _ in range(batch_size):
+def read_n_frames(video_stream, num_frames):
+    for _ in range(num_frames):
         ret, frame = video_stream.read()
 
         if not ret:
-            if idx == 0:
-                raise ValueError("Video file contains no frames")
             video_stream.release()
             video_stream = cv2.VideoCapture(args.face)
-            _, frame = video_stream.read()
+            ret, frame = video_stream.read()
+            if not ret:
+                raise ValueError("Video file contains no frames")
 
         frame = resize_frame(frame)
         yield frame
