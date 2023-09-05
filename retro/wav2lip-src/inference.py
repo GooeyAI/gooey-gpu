@@ -225,14 +225,14 @@ def main():
             frame_h, frame_w = frame_batch[0].shape[:-1]
             cmd_args = [
                 "ffmpeg",
-                "-pixel_format", "bgr24",
-                "-f", "rawvideo",
-                "-vcodec", "rawvideo",
+                "-pixel_format", "bgr24", # to match opencv
+                "-f", "rawvideo", "-vcodec", "rawvideo",
                 "-s", f"{frame_w}x{frame_h}",
                 "-r", str(fps),
-                "-i", "pipe:0",
+                "-i", "pipe:0", # stdin
                 "-i", args.audio,
                 "-vcodec", "libx264",
+                "-pix_fmt", "yuv420p", # because iphone, see https://trac.ffmpeg.org/wiki/Encode/H.264#Encodingfordumbplayers
                 "-preset", "ultrafast",
                 args.outfile,
             ]  # fmt:skip
