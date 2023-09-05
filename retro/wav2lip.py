@@ -133,6 +133,7 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
                 "-max_interleave_delta", "100M",
                 "-map", "0:v:0",
                 "-map", "1:a:0",
+                "-pix_fmt", "yuv420p",
                 # "-c", "copy",
                 # "-c:v", "h264_nvenc",
                 result_path,
