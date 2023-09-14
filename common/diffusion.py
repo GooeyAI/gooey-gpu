@@ -4,13 +4,12 @@ from functools import lru_cache
 import torch
 from celery.signals import worker_init
 from diffusers import (
-    StableDiffusionPipeline,
-    StableDiffusionImg2ImgPipeline,
+    AutoPipelineForText2Image,
     DiffusionPipeline,
     StableDiffusionInstructPix2PixPipeline,
-    StableDiffusionInpaintPipeline,
     StableDiffusionUpscalePipeline,
-    StableDiffusionControlNetPipeline,
+    AutoPipelineForImage2Image,
+    AutoPipelineForInpainting,
 )
 from kombu import Queue
 
@@ -40,14 +39,14 @@ for model_id in MODEL_IDS:
 def init(**kwargs):
     # app.conf.task_queues = []
     for model_id in MODEL_IDS:
-        _load_pipe_cached(StableDiffusionPipeline, model_id)
+        _load_pipe_cached(AutoPipelineForText2Image, model_id)
 
 
 @app.task(name="diffusion.text2img")
 @gooey_gpu.endpoint
 def text2img(pipeline: PipelineInfo, inputs: Text2ImgInputs):
     return predict_and_upload(
-        pipe_cls=StableDiffusionPipeline,
+        pipe_cls=AutoPipelineForText2Image,
         pipeline=pipeline,
         inputs=inputs,
     )
@@ -57,7 +56,8 @@ def text2img(pipeline: PipelineInfo, inputs: Text2ImgInputs):
 @gooey_gpu.endpoint
 def img2img(pipeline: PipelineInfo, inputs: Img2ImgInputs):
     return predict_and_upload(
-        pipe_cls=StableDiffusionImg2ImgPipeline,
+        pipe_cls=AutoPipelineForImage2Image,
+        base_cls=AutoPipelineForText2Image,
         pipeline=pipeline,
         inputs=inputs,
         inputs_extra=dict(
@@ -71,7 +71,8 @@ def img2img(pipeline: PipelineInfo, inputs: Img2ImgInputs):
 def inpaint(pipeline: PipelineInfo, inputs: InpaintInputs):
     image = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
     return predict_and_upload(
-        pipe_cls=StableDiffusionInpaintPipeline,
+        pipe_cls=AutoPipelineForInpainting,
+        base_cls=AutoPipelineForText2Image,
         pipeline=pipeline,
         inputs=inputs,
         inputs_extra=dict(
@@ -116,6 +117,7 @@ def predict_and_upload(
     inputs: DiffusersInputs,
     inputs_extra: dict = None,
     extra_components: dict = None,
+    base_cls=None,
 ):
     if inputs_extra is None:
         inputs_extra = {}
@@ -124,7 +126,13 @@ def predict_and_upload(
     inputs_dict = inputs.dict()
     inputs_dict.update(inputs_extra)
     # load pipe
-    pipe = load_pipe(pipe_cls, pipeline.model_id, pipeline.scheduler, extra_components)
+    pipe = _load_pipe(
+        base_cls=base_cls,
+        pipe_cls=pipe_cls,
+        model_id=pipeline.model_id,
+        scheduler=pipeline.scheduler,
+        extra_components=extra_components,
+    )
     try:
         # custom safety checker impl
         safety_checker_wrapper(pipe, disabled=pipeline.disable_safety_checker)
@@ -138,22 +146,19 @@ def predict_and_upload(
         # clean up extra components
         for attr in extra_components.keys():
             setattr(pipe, attr, None)
-    output_images = output.images
-    gooey_gpu.upload_images(output_images, pipeline.upload_urls)
+    # upload output
+    gooey_gpu.upload_images(output.images, pipeline.upload_urls)
 
 
-def load_pipe(pipe_cls, model_id: str, scheduler: str, extra_components: dict):
-    if issubclass(
-        pipe_cls,
-        (
-            StableDiffusionPipeline,
-            StableDiffusionImg2ImgPipeline,
-            StableDiffusionInpaintPipeline,
-            StableDiffusionControlNetPipeline,
-        ),
-    ):
-        base_cls = StableDiffusionPipeline
-    else:
+def _load_pipe(
+    *,
+    base_cls,
+    pipe_cls,
+    model_id: str,
+    scheduler: str,
+    extra_components: dict,
+):
+    if base_cls is None:
         base_cls = pipe_cls
     base_pipe, default_scheduler = _load_pipe_cached(base_cls, model_id)
     base_pipe.scheduler = default_scheduler

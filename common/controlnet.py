@@ -11,6 +11,7 @@ from celery.signals import worker_init
 from diffusers import (
     ControlNetModel,
     StableDiffusionControlNetPipeline,
+    AutoPipelineForText2Image,
 )
 
 import gooey_gpu
@@ -60,6 +61,7 @@ def controlnet(pipeline: ControlNetPipelineInfo, inputs: ControlNetInputs):
     ]
     return predict_and_upload(
         pipe_cls=StableDiffusionControlNetPipeline,
+        base_cls=AutoPipelineForText2Image,
         pipeline=pipeline,
         inputs=inputs,
         inputs_extra=dict(
