@@ -164,7 +164,10 @@ def _load_pipe(
     base_pipe.scheduler = default_scheduler
     if scheduler:
         base_pipe.scheduler = get_scheduler(base_pipe, scheduler)
-    return pipe_cls(**base_pipe.components, **extra_components)
+    if issubclass(pipe_cls, DiffusionPipeline):
+        return pipe_cls(**base_pipe.components, **extra_components)
+    else:
+        return pipe_cls.from_pipe(base_pipe, **extra_components)
 
 
 @lru_cache
