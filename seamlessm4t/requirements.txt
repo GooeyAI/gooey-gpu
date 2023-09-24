@@ -1,0 +1,14 @@
+## gooey-gpu
+Pillow ~= 9.4.0
+sentry-sdk ~= 1.14.0
+scipy ~= 1.10.0
+numpy ~= 1.24.3
+accelerate ~= 0.20.3
+celery ~= 5.3.0
+pydantic ~= 1.10.9
+redis ~= 4.5.5
+transformers ~= 4.30.2
+
+## utils
+pydub
+torchaudio

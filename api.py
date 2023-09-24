@@ -121,3 +121,23 @@ class AsrOutputChunk(BaseModel):
 class AsrOutput(BaseModel):
     text: str
     chunks: typing.List[AsrOutputChunk] = []
+
+
+class SeamlessM4TPipeline(BaseModel):
+    model_id: typing.Literal[
+        "seamlessM4T_large", "seamlessM4T_medium"
+    ] = "seamlessM4T_large"
+
+
+class SeamlessM4TInputs(BaseModel):
+    audio: str | None  # required for ASR, S2ST, and S2TT
+    text: str | None  # required for T2ST and T2TT
+    task: typing.Literal["S2ST", "T2ST", "S2TT", "T2TT", "ASR"] = "ASR"
+    src_lang: str | None = None  # required for T2ST and T2TT
+    tgt_lang: str | None = "eng"  # ignored for ASR (only src_lang is used)
+    # seamless uses ISO 639-3 codes for languages
+
+
+class SeamlessM4TOutput(typing.TypedDict):
+    text: str | None
+    audio: bytes | None
