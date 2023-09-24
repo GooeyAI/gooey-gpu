@@ -2,7 +2,6 @@ import os
 from functools import lru_cache
 import tempfile
 from pydub import AudioSegment
-import wave
 import math
 import textwrap
 import torchaudio
@@ -77,11 +76,11 @@ def seamless(
                 wavs.append((wav, sr))
 
         with tempfile.NamedTemporaryFile("br+") as outfile:
+            audio = None
             if wavs:
                 _combine_wavs(wavs, outfile)
-            return SeamlessM4TOutput(
-                text="\n\n".join(map(str, texts)), audio=outfile.read()
-            )
+                audio = outfile.read()
+            return SeamlessM4TOutput(text="\n\n".join(map(str, texts)), audio=audio)
 
 
 def _seamless_one_chunk(task, path_or_text, translator, tgt_lang, src_lang):
@@ -144,7 +143,7 @@ def _chunked_text(text: str, tokens_per_split):
 
 
 def _combine_wavs(wavs, outfile):
-    data = []
+    combined_sound = AudioSegment.empty()
     for tensor, sr in wavs:
         with tempfile.NamedTemporaryFile("wb", suffix=".wav") as wav:
             torchaudio.save(
@@ -154,12 +153,5 @@ def _combine_wavs(wavs, outfile):
                 encoding="PCM_S",
                 bits_per_sample=16,
             )
-            w = wave.open(wav.name, "rb")
-            data.append([w.getparams(), w.readframes(w.getnframes())])
-            w.close()
-
-    output = wave.open(outfile, "wb")
-    output.setparams(data[0][0])
-    for i in range(len(data)):
-        output.writeframes(data[i][1])
-    output.close()
+            combined_sound += AudioSegment.from_wav(wav.name)
+    combined_sound.export(outfile.name, format="wav")
