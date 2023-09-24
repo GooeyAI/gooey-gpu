@@ -53,7 +53,7 @@ def seamless(
                 audio_path = temp_file.name
                 translator = load_translator(pipeline.model_id)
             case "T2ST" | "T2TT":
-                text = inputs.text
+                input_text = inputs.text
                 translator = load_translator(pipeline.model_id)
             case _:
                 raise Exception("Unsupported task for SeamlessM4T")
