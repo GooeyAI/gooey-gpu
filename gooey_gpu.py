@@ -213,7 +213,11 @@ def upload_audio(audio, url: str, rate: int = 16_000):
     scipy.io.wavfile.write(f, rate=rate, data=audio)
     audio_bytes = f.getvalue()
     # upload to given url
-    r = requests.put(url, headers={"Content-Type": "audio/wav"}, data=audio_bytes)
+    upload_audio_from_bytes(audio_bytes, url)
+
+
+def upload_audio_from_bytes(audio: bytes, url: str):
+    r = requests.put(url, headers={"Content-Type": "audio/wav"}, data=audio)
     r.raise_for_status()
 
 

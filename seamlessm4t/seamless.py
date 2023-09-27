@@ -76,11 +76,13 @@ def seamless(
                 wavs.append((wav, sr))
 
         with tempfile.NamedTemporaryFile("br+") as outfile:
-            audio = None
+            audio_url = None
             if wavs:
                 _combine_wavs(wavs, outfile)
-                audio = outfile.read()
-            return SeamlessM4TOutput(text="\n\n".join(map(str, texts)), audio=audio)
+                audio_bytes = outfile.read()
+                audio_url = pipeline.upload_urls[0]
+                gooey_gpu.upload_audio_from_bytes(audio_bytes, audio_url)
+            return SeamlessM4TOutput(text="\n\n".join(map(str, texts)), audio=audio_url)
 
 
 def _seamless_one_chunk(task, path_or_text, translator, tgt_lang, src_lang):

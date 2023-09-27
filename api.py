@@ -124,6 +124,7 @@ class AsrOutput(BaseModel):
 
 
 class SeamlessM4TPipeline(BaseModel):
+    upload_urls: typing.List[str] = []
     model_id: typing.Literal[
         "seamlessM4T_large", "seamlessM4T_medium"
     ] = "seamlessM4T_large"
@@ -140,4 +141,4 @@ class SeamlessM4TInputs(BaseModel):
 
 class SeamlessM4TOutput(typing.TypedDict):
     text: str | None
-    audio: bytes | None
+    audio: str | None
