@@ -2,10 +2,10 @@ import os
 import typing
 from functools import lru_cache
 
+import PIL.Image
 import numpy as np
 import torch
 import torch.nn.functional as F
-from cog import Path
 from skimage import io
 from torchvision.transforms.functional import normalize
 from tqdm import tqdm
@@ -49,11 +49,9 @@ def dis(pipeline: PipelineInfo, inputs: typing.List[str]):
         ma = torch.max(result)
         mi = torch.min(result)
         result = (result - mi) / (ma - mi)
-        io.imsave(
-            "out.png",
-            (result * 255).permute(1, 2, 0).cpu().data.numpy().astype(np.uint8),
-        )
-    return Path("out.png")
+        im = (result * 255).permute(1, 2, 0).cpu().data.numpy().astype(np.uint8)
+        im_pil = PIL.Image.fromarray(im)
+        gooey_gpu.upload_image(im_pil, pipeline.upload_urls[i])
 
 
 @lru_cache

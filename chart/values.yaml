@@ -34,7 +34,7 @@ deployments:
   - name: "common-diffusion-new"
     image: *commonImg
     nodeSelector:
-      gooey.ai/gpu: a100-40g
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
     limits:
       memory: "80Gi"
       cpu: "1"
@@ -268,7 +268,7 @@ deployments:
         wav2lip_gan.pth
 
   - name: "retro-u2net-dis"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:6ff56aa1b09e81e746235608a4cf344862c9d3abe9fd79d98acdb698b43732fa"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:f6978d306b892f7af21951a360cd2cdb83a80547f37bf10d6ee7b45d4ee3fa60"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
@@ -285,10 +285,11 @@ deployments:
           isnet-general-use.pth
 
   - name: "retro-nemo-asr"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:6ff56aa1b09e81e746235608a4cf344862c9d3abe9fd79d98acdb698b43732fa"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:f6978d306b892f7af21951a360cd2cdb83a80547f37bf10d6ee7b45d4ee3fa60"
     replicas: 1
     nodeSelector:
-      gooey.ai/gpu: a100-40g
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
       memory: "15Gi"
       cpu: "1"
@@ -300,10 +301,11 @@ deployments:
           https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "common-audio-ldm-bark"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:bf0c195b4fd3e52b2bd34df3bbf6386f69cb1da0ee059d948185ab2624a8f73a"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:aa8e1cd280c1d5af5c865e5f7f540fcd458e84c0da4ccf71bdfcf79d4760184f"
     replicas: 1
     nodeSelector:
-      gooey.ai/gpu: a100-40g
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
       memory: "15Gi"
       cpu: "1"
