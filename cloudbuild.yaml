@@ -1,8 +1,0 @@
-steps:
-- name: 'gcr.io/kaniko-project/executor:latest'
-  args:
-  - --destination=us-docker.pkg.dev/dara-c1b52/cloudbuild/sd-multi
-  - --cache=true
-options:
-  pool:
-    name: 'projects/dara-c1b52/locations/us-central1/workerPools/gooey'
