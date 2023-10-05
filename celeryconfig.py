@@ -19,7 +19,7 @@ app.conf.update(
 
 def setup_queues(
     *,
-    model_ids: list[str],
+    model_ids: typing.List[str],
     load_fn: typing.Callable[[str], None],
     queue_prefix: str = os.environ.get("QUEUE_PREFIX", "gooey-gpu"),
 ):

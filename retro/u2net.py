@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import typing
 from functools import lru_cache
 
 import PIL.Image
@@ -25,7 +26,7 @@ from u2net_test import normPRED, save_output
 
 @app.task(name="u2net")
 @gooey_gpu.endpoint
-def u2net(pipeline: PipelineInfo, inputs: list[str]):
+def u2net(pipeline: PipelineInfo, inputs: typing.List[str]):
     net = load_model(pipeline.model_id)
     prediction_dir = "outputs/"
 

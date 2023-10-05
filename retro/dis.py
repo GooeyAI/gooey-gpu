@@ -1,4 +1,5 @@
 import os
+import typing
 from functools import lru_cache
 
 import numpy as np
@@ -20,7 +21,7 @@ from models import ISNetDIS
 
 @app.task(name="dis")
 @gooey_gpu.endpoint
-def dis(pipeline: PipelineInfo, inputs: list[str]):
+def dis(pipeline: PipelineInfo, inputs: typing.List[str]):
     """Run a single prediction on the model"""
     net = setup(pipeline.model_id)
     try:
