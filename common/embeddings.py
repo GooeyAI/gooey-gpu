@@ -2,30 +2,13 @@ import os
 from functools import lru_cache
 
 import torch
-from celery.signals import worker_init
-from kombu import Queue
 from pydantic import BaseModel
 from torch import Tensor
 from transformers import AutoTokenizer, AutoModel
 
 import gooey_gpu
 from api import PipelineInfo
-from celeryconfig import app
-
-QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ["EMBEDDING_MODEL_IDS"].split()
-
-app.conf.task_queues = app.conf.task_queues or []
-for model_id in MODEL_IDS:
-    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
-    app.conf.task_queues.append(Queue(queue))
-
-
-@worker_init.connect()
-def init(**kwargs):
-    # app.conf.task_queues = []
-    for model_id in MODEL_IDS:
-        load_pipe(model_id)
+from celeryconfig import app, setup_queues
 
 
 class EmbeddingsInputs(BaseModel):
@@ -65,3 +48,9 @@ def load_pipe(model_id: str):
     model = AutoModel.from_pretrained(model_id)
     model.to(gooey_gpu.DEVICE_ID)
     return tokenizer, model
+
+
+setup_queues(
+    model_ids=os.environ["EMBEDDING_MODEL_IDS"].split(),
+    load_fn=load_pipe,
+)

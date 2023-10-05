@@ -1,31 +1,14 @@
-import numpy as np
 import os
 from functools import lru_cache
 
+import numpy as np
 import requests
 import torch
 import transformers
-from celery.signals import worker_init
-from kombu import Queue
 
 import gooey_gpu
 from api import PipelineInfo, WhisperInputs, AsrOutput
-from celeryconfig import app
-
-QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ["WHISPER_MODEL_IDS"].split()
-
-app.conf.task_queues = app.conf.task_queues or []
-for model_id in MODEL_IDS:
-    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
-    app.conf.task_queues.append(Queue(queue))
-
-
-@worker_init.connect()
-def init(**kwargs):
-    # app.conf.task_queues = []
-    for model_id in MODEL_IDS:
-        load_pipe(model_id)
+from celeryconfig import app, setup_queues
 
 
 @app.task(name="whisper")
@@ -84,3 +67,9 @@ def load_pipe(model_id: str):
         torch_dtype=torch.float16,
     )
     return pipe
+
+
+setup_queues(
+    model_ids=os.environ["WHISPER_MODEL_IDS"].split(),
+    load_fn=load_pipe,
+)

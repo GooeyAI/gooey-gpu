@@ -6,33 +6,22 @@ import typing
 from tempfile import TemporaryDirectory
 
 import requests
-from celery.signals import worker_init
-from kombu import Queue
 from pydantic import Field, BaseModel
 
 import gooey_gpu
 from api import PipelineInfo
-from celeryconfig import app
+from celeryconfig import app, setup_queues
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "wav2lip-src"))
-print(os.path.join(os.path.dirname(__file__), "wav2lip-src"))
 
 import inference
 
-QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ["WAV2LIP_MODEL_IDS"].split()
-
-app.conf.task_queues = app.conf.task_queues or []
-for model_id in MODEL_IDS:
-    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
-    app.conf.task_queues.append(Queue(queue))
-
-
-@worker_init.connect()
-def init(**kwargs):
-    # app.conf.task_queues = []
-    for model_id in MODEL_IDS:
-        inference.do_load(os.path.join(gooey_gpu.CHECKPOINTS_DIR, model_id))
+setup_queues(
+    model_ids=os.environ["WAV2LIP_MODEL_IDS"].split(),
+    load_fn=lambda model_id: inference.do_load(
+        os.path.join(gooey_gpu.CHECKPOINTS_DIR, model_id)
+    ),
+)
 
 
 class Wav2LipInputs(BaseModel):

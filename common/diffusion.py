@@ -2,7 +2,6 @@ import os
 from functools import lru_cache
 
 import torch
-from celery.signals import worker_init
 from diffusers import (
     AutoPipelineForText2Image,
     DiffusionPipeline,
@@ -11,7 +10,6 @@ from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
 )
-from kombu import Queue
 
 import gooey_gpu
 from api import (
@@ -24,22 +22,7 @@ from api import (
     InstructPix2PixInputs,
     DiffusersInputs,
 )
-from celeryconfig import app
-
-QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ["SD_MODEL_IDS"].split()
-
-app.conf.task_queues = app.conf.task_queues or []
-for model_id in MODEL_IDS:
-    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
-    app.conf.task_queues.append(Queue(queue))
-
-
-@worker_init.connect()
-def init(**kwargs):
-    # app.conf.task_queues = []
-    for model_id in MODEL_IDS:
-        _load_pipe_cached(AutoPipelineForText2Image, model_id)
+from celeryconfig import app, setup_queues
 
 
 @app.task(name="diffusion.text2img")
@@ -160,7 +143,7 @@ def _load_pipe(
 ):
     if base_cls is None:
         base_cls = pipe_cls
-    base_pipe, default_scheduler = _load_pipe_cached(base_cls, model_id)
+    base_pipe, default_scheduler = _load_pipe_cached(model_id, pipe_cls=base_cls)
     base_pipe.scheduler = default_scheduler
     if scheduler:
         base_pipe.scheduler = get_scheduler(base_pipe, scheduler)
@@ -171,7 +154,7 @@ def _load_pipe(
 
 
 @lru_cache
-def _load_pipe_cached(pipe_cls, model_id: str):
+def _load_pipe_cached(model_id: str, pipe_cls=AutoPipelineForText2Image):
     print(f"Loading SD model {model_id!r}...")
     pipe = pipe_cls.from_pretrained(model_id, torch_dtype=torch.float16)
     pipe = pipe.to(gooey_gpu.DEVICE_ID)
@@ -205,3 +188,9 @@ def safety_checker_wrapper(pipe, disabled: bool):
             pipe.safety_checker = _safety_checker
     except AttributeError:
         pass
+
+
+setup_queues(
+    model_ids=os.environ["SD_MODEL_IDS"].split(),
+    load_fn=_load_pipe_cached,
+)
