@@ -18,24 +18,9 @@ from api import (
     SeamlessM4TInputs,
     SeamlessM4TOutput,
 )
-from celeryconfig import app
+from celeryconfig import app, setup_queues
 
-QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ[
-    "SEAMLESS_MODEL_IDS"
-].split()  # "seamlessM4T_large" or "seamlessM4T_medium"
 VOCODER_ID = "vocoder_36langs"  # only supported option rn
-
-app.conf.task_queues = app.conf.task_queues or []
-for model_id in MODEL_IDS:
-    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
-    app.conf.task_queues.append(Queue(queue))
-
-
-@worker_init.connect()
-def init(**kwargs):
-    for model_id in MODEL_IDS:
-        load_translator(model_id)
 
 
 @app.task(name="seamless")
@@ -72,7 +57,7 @@ def seamless(
             )
             if text:
                 texts.append(text)
-            if wav != None:  # needed because boolean value of tensor is ambiguous
+            if wav is not None:
                 wavs.append((wav, sr))
 
         with tempfile.NamedTemporaryFile("br+") as outfile:
@@ -127,6 +112,12 @@ def load_translator(model_id: str):
         vocoder_name_or_card=VOCODER_ID,
         device=torch.device(gooey_gpu.DEVICE_ID),
     )
+
+
+setup_queues(
+    model_ids=os.environ["SEAMLESS_MODEL_IDS"].split(),
+    load_fn=load_translator,
+)
 
 
 def _chunked_audio_file(file, min_per_split: int):
