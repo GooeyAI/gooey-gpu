@@ -238,10 +238,10 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
+      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
     limits:
-      memory: "12Gi"
-      cpu: "3"
+      memory: "10Gi"
+      cpu: "15"
     env:
       IMPORTS: |-
         common.embeddings
@@ -278,7 +278,7 @@ deployments:
           retro.u2net
           retro.dis
       U2NET_MODEL_IDS: |-
-          u2net.pth
+          u2net
       DIS_MODEL_IDS: |-
           isnet-general-use.pth
 
