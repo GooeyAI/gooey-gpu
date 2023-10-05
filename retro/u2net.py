@@ -72,7 +72,9 @@ def u2net(pipeline: PipelineInfo, inputs: list[str]):
 
 @lru_cache
 def load_model(model_id):
-    model_dir = os.path.join(gooey_gpu.CHECKPOINTS_DIR, model_id)
+    model_dir = os.path.join(
+        gooey_gpu.CHECKPOINTS_DIR, "saved_models", model_id, f"{model_id}.pth"
+    )
 
     if model_id == "u2net":
         print("...load U2NET---173.6 MB")
