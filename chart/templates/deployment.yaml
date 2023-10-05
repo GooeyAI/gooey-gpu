@@ -20,6 +20,12 @@ spec:
       {{- if .nodeSelector }}
       nodeSelector: {{- toYaml .nodeSelector | nindent 8 }}
       {{- end }}
+      # tolerations might not be needed if nodepool is not created with taint
+      tolerations:
+      - key: "sku"
+        operator: "Equal"
+        value: "gpu"
+        effect: "NoSchedule"
       containers:
       - name: "worker"
         image: "{{ .image }}"

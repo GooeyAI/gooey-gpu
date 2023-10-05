@@ -1,0 +1,11 @@
+# helm install -f values-rabbitmq.yaml rabbitmq oci://registry-1.docker.io/bitnamicharts/rabbitmq 
+# secret will be stored as a k8s secret
+# retrieve it with:
+# kubectl get secret rabbitmq -o jsonpath='{.data.rabbitmq-password}' | base64 -d
+
+nodeSelector:
+  agentpool: nodepool1
+
+metrics:
+  enabled: true
+  port: 9090

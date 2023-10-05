@@ -1,0 +1,9 @@
+# helm install -f values-redis.yaml redis oci://registry-1.docker.io/bitnamicharts/redis
+# to get redis password:
+# kubectl get secret redis -o jsonpath='{.data.redis-password}' | base64 -d
+
+nodeSelector:
+  agentpool: nodepool1
+
+# by default, it builds a cluster. that can be changed to a single master node with:
+# architecture: standalone
