@@ -4,27 +4,11 @@ import uuid
 from functools import lru_cache
 
 import requests
-from celery.signals import worker_init
-from kombu import Queue
 
 import gooey_gpu
 from api import PipelineInfo
-from celeryconfig import app
+from celeryconfig import app, setup_queues
 from deforum_sd import deforum_script
-
-QUEUE_PREFIX = os.environ.get("QUEUE_PREFIX", "gooey-gpu")
-MODEL_IDS = os.environ["DEFORUM_MODEL_IDS"].split()
-
-app.conf.task_queues = app.conf.task_queues or []
-for model_id in MODEL_IDS:
-    queue = os.path.join(QUEUE_PREFIX, model_id).strip("/")
-    app.conf.task_queues.append(Queue(queue))
-
-
-@worker_init.connect
-def init_worker(**kwargs):
-    for chkpt in MODEL_IDS:
-        load_deforum(chkpt)
 
 
 @app.task(name="deforum")
@@ -69,3 +53,9 @@ def load_deforum(chkpt: str):
     deforum_script.setup(root)
     root.model.to(gooey_gpu.DEVICE_ID)
     return root
+
+
+setup_queues(
+    model_ids=os.environ["DEFORUM_MODEL_IDS"].split(),
+    load_fn=load_deforum,
+)

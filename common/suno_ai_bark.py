@@ -1,15 +1,12 @@
 import os.path
 import tempfile
-from functools import lru_cache
 
 import bark
 import numpy as np
-from fastapi import APIRouter
 from pydantic import BaseModel
 
 import gooey_gpu
-
-app = APIRouter()
+from celeryconfig import app, setup_queues
 
 
 class PipelineInfo(BaseModel):
@@ -26,7 +23,7 @@ class BarkInputs(BaseModel):
     init_transcript: str = None
 
 
-@app.post("/bark/")
+@app.task(name="bark")
 @gooey_gpu.endpoint
 def bark_api(pipeline: PipelineInfo, inputs: BarkInputs):
     assert inputs.prompt, "Please provide a prompt"
@@ -44,10 +41,12 @@ def bark_api(pipeline: PipelineInfo, inputs: BarkInputs):
                 f = os.path.join(d, "history.npz")
                 bark.save_as_prompt(f, prev_generation)
                 history_prompt = f
-            prev_generation, audio_array = _run_bark(
-                prompt=prompt,
+            prev_generation, audio_array = bark.generate_audio(
+                prompt,
                 history_prompt=history_prompt,
-                inputs=inputs,
+                text_temp=inputs.text_temp,
+                waveform_temp=inputs.waveform_temp,
+                output_full=True,
             )
             audio_chunks.append(audio_array)
     # combine all chunks into long audio file
@@ -57,21 +56,7 @@ def bark_api(pipeline: PipelineInfo, inputs: BarkInputs):
         gooey_gpu.upload_audio(audio_array, url, rate=bark.SAMPLE_RATE)
 
 
-@gooey_gpu.gpu_task
-def _run_bark(*, prompt, history_prompt, inputs):
-    models = _preload_models()
-    with gooey_gpu.use_models(*models):
-        return bark.generate_audio(
-            prompt,
-            history_prompt=history_prompt,
-            text_temp=inputs.text_temp,
-            waveform_temp=inputs.waveform_temp,
-            output_full=True,
-        )
-
-
-@lru_cache
-def _preload_models():
-    bark.preload_models()
-    models = bark.generation.models
-    return models["text"]["model"], models["coarse"], models["fine"], models["codec"]
+setup_queues(
+    model_ids=["bark"],
+    load_fn=lambda _: bark.preload_models(),
+)

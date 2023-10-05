@@ -14,7 +14,7 @@ storageClass:
   defaultClass: true
 
 commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:a1bc2859bd912def52cb52ae48dd3be4fedbdec712d47914ed783d81c20577cd"
-retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:64457bd1984ec090776f91cb832bfe9ee7e0a0700a175abf2f78f47cbb7deaad"
+retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:ac899280f686064ea192edf96c8ff7eef627900ac124f8a595463e1a622234ba"
 deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
 
 controlnetModelIds: &controlnetModelIds |-
@@ -31,14 +31,13 @@ controlnetModelIds: &controlnetModelIds |-
     monster-labs/control_v1p_sd15_qrcode_monster/v2
 
 deployments:
-  - name: "common-diffusion-1"
+  - name: "common-diffusion-new"
     image: *commonImg
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    replicas: 2
+      gooey.ai/gpu: a100-40g
     limits:
-      memory: "12Gi"
-      cpu: "3"
+      memory: "80Gi"
+      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -48,38 +47,43 @@ deployments:
         runwayml/stable-diffusion-v1-5
         stabilityai/stable-diffusion-2-1
         Lykon/DreamShaper
-  - name: "common-diffusion-2"
-    image: *commonImg
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    limits:
-      memory: "12Gi"
-      cpu: "3"
-    env:
-      IMPORTS: |-
-        common.diffusion
-        common.controlnet
-      CONTROLNET_MODEL_IDS: *controlnetModelIds
-      SD_MODEL_IDS: |-
         wavymulder/Analog-Diffusion
         prompthero/openjourney
         prompthero/openjourney-v2
-  - name: "common-diffusion-3"
-    image: *commonImg
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    limits:
-      memory: "12Gi"
-      cpu: "3"
-    env:
-      IMPORTS: |-
-        common.diffusion
-        common.controlnet
-      CONTROLNET_MODEL_IDS: *controlnetModelIds
-      SD_MODEL_IDS: |-
         dreamlike-art/dreamlike-photoreal-2.0
         devxpy/rodent-diffusion-1-5
         darkstorm2150/Protogen_v5.3_Official_Release
+
+#  - name: "common-diffusion-dreamlike-photoreal"
+#    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:6903d8c0220f78236e1d285f595464c826c9c3bffbeecde70c380c733be428b7"
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      IMPORTS: |-
+#        common.diffusion
+#        common.controlnet
+#      CONTROLNET_MODEL_IDS: *controlnetModelIds
+#      SD_MODEL_IDS: |-
+#        dreamlike-art/dreamlike-photoreal-2.0
+#  - name: "common-diffusion-5"
+#    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:6903d8c0220f78236e1d285f595464c826c9c3bffbeecde70c380c733be428b7"
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-l4"
+#    limits:
+#      memory: "12Gi"
+#      cpu: "3"
+#    env:
+#      IMPORTS: |-
+#        common.diffusion
+#        common.controlnet
+#      CONTROLNET_MODEL_IDS: *controlnetModelIds
+#      SD_MODEL_IDS: |-
+#        warp-ai/wuerstchen
+
   - name: "common-diffusion-4"
     image: *commonImg
     replicas: 4
@@ -124,7 +128,7 @@ deployments:
 
   - name: "deforum-sd-epicdream"
     image: *deforumImg
-    replicas: 3
+    replicas: 2
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
@@ -251,12 +255,59 @@ deployments:
     image: *retroImg
     replicas: 3
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
+      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
     limits:
-      memory: "15Gi"
-      cpu: "3.5"
+      memory: "10Gi"
+      cpu: "15"
     env:
       IMPORTS: |-
         retro.wav2lip
       WAV2LIP_MODEL_IDS: |-
         wav2lip_gan.pth
+
+  - name: "retro-u2net-dis"
+    image: *retroImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
+    limits:
+      memory: "10Gi"
+      cpu: "15"
+    env:
+      IMPORTS: |-
+          retro.u2net
+          retro.dis
+      U2NET_MODEL_IDS: |-
+          u2net.pth
+      DIS_MODEL_IDS: |-
+          isnet-general-use.pth
+
+  - name: "retro-nemo-asr"
+    image: *retroImg
+    replicas: 1
+    nodeSelector:
+      gooey.ai/gpu: a100-40g
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+          retro.nvidia_nemo
+      NEMO_ASR_MODEL_IDS: |-
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
+
+  - name: "common-audio-ldm-bark"
+    image: *retroImg
+    replicas: 1
+    nodeSelector:
+      gooey.ai/gpu: a100-40g
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.audio_ldm
+        common.suno_ai_bark
+      AUDIO_LDM_MODEL_IDS: |-
+          cvssp/audioldm

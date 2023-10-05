@@ -1,0 +1,6 @@
+[submodule "retro/U-2-Net"]
+	path = retro/U-2-Net
+	url = https://github.com/xuebinqin/U-2-Net.git
+[submodule "retro/DIS"]
+	path = retro/DIS
+	url = https://github.com/xuebinqin/DIS.git
