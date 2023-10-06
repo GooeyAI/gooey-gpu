@@ -7,6 +7,7 @@ import PIL.Image
 import numpy as np
 import torch
 import torch.nn.functional as F
+from pydantic import BaseModel
 from skimage import io
 from torchvision.transforms.functional import normalize
 from tqdm import tqdm
@@ -20,9 +21,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "DIS", "IS-Net"))
 from models import ISNetDIS
 
 
+class DISInputs(BaseModel):
+    images: typing.List[str]
+
+
 @app.task(name="dis")
 @gooey_gpu.endpoint
-def dis(pipeline: PipelineInfo, inputs: typing.List[str]):
+def dis(pipeline: PipelineInfo, inputs: DISInputs):
     """Run a single prediction on the model"""
     net = setup(pipeline.model_id)
     try:
@@ -30,7 +35,7 @@ def dis(pipeline: PipelineInfo, inputs: typing.List[str]):
     except FileNotFoundError:
         pass
     input_size = [1024, 1024]
-    for i, im_path in tqdm(enumerate(inputs), total=len(inputs)):
+    for i, im_path in tqdm(enumerate(inputs.images), total=len(inputs.images)):
         print("im_path: ", im_path)
         im = io.imread(im_path)
         if len(im.shape) < 3:
