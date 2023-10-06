@@ -37,7 +37,7 @@ deployments:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
-      memory: "80Gi"
+      memory: "75Gi"
       cpu: "10"
     env:
       IMPORTS: |-
@@ -70,21 +70,21 @@ deployments:
 #      CONTROLNET_MODEL_IDS: *controlnetModelIds
 #      SD_MODEL_IDS: |-
 #        dreamlike-art/dreamlike-photoreal-2.0
-  - name: "common-diffusion-wuerstchen"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:c4b5872a9b658e27023d3a2410282763d688859d31efd5b2ce1ed3ca1a60c605"
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      IMPORTS: |-
-        common.diffusion
-        common.controlnet
-      CONTROLNET_MODEL_IDS: *controlnetModelIds
-      SD_MODEL_IDS: |-
-        warp-ai/wuerstchen
+#  - name: "common-diffusion-wuerstchen"
+#    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:c4b5872a9b658e27023d3a2410282763d688859d31efd5b2ce1ed3ca1a60c605"
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      IMPORTS: |-
+#        common.diffusion
+#        common.controlnet
+#      CONTROLNET_MODEL_IDS: *controlnetModelIds
+#      SD_MODEL_IDS: |-
+#        warp-ai/wuerstchen
 
   - name: "common-diffusion-4"
     image: *commonImg
@@ -270,7 +270,7 @@ deployments:
         wav2lip_gan.pth
 
   - name: "retro-u2net-dis"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:5088851e55f188db67e1d02955322ef18711fc01ab55d35b911141a5529a3d88"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:f8a986878205b0cbacc956917720f7dc696c85740ca19f47050e743743749885"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
@@ -287,7 +287,7 @@ deployments:
           isnet-general-use.pth
 
   - name: "retro-nemo-asr"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:5088851e55f188db67e1d02955322ef18711fc01ab55d35b911141a5529a3d88"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:f8a986878205b0cbacc956917720f7dc696c85740ca19f47050e743743749885"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
@@ -303,7 +303,7 @@ deployments:
           https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "common-audio-ldm-bark"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:c4b5872a9b658e27023d3a2410282763d688859d31efd5b2ce1ed3ca1a60c605"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:8eb9a3580d9fa35eb0d9ddc2025782b7a171671bc11aa91683bf73ed2117c9ef"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"

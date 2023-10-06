@@ -15,7 +15,7 @@ import gooey_gpu
 from api import PipelineInfo
 from celeryconfig import app, setup_queues
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "DIS"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "DIS", "IS-Net"))
 
 from models import ISNetDIS
 
