@@ -52,8 +52,10 @@ deployments:
         prompthero/openjourney
         prompthero/openjourney-v2
         dreamlike-art/dreamlike-photoreal-2.0
-        devxpy/rodent-diffusion-1-5
         darkstorm2150/Protogen_v5.3_Official_Release
+        stabilityai/stable-diffusion-2-inpainting
+        runwayml/stable-diffusion-inpainting
+
 
 #  - name: "common-diffusion-dreamlike-photoreal"
 #    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:6903d8c0220f78236e1d285f595464c826c9c3bffbeecde70c380c733be428b7"
