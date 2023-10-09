@@ -193,5 +193,5 @@ def safety_checker_wrapper(pipe, disabled: bool):
 
 setup_queues(
     model_ids=os.environ["SD_MODEL_IDS"].split(),
-    load_fn=_load_pipe_cached,
+    load_fn=_load_pipe,
 )
