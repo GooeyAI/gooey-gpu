@@ -100,6 +100,6 @@ def load_model(model_id):
 
 
 setup_queues(
-    model_ids=os.environ["U2NET_MODEL_IDS"].split(","),
+    model_ids=os.environ["U2NET_MODEL_IDS"].split(),
     load_fn=load_model,
 )

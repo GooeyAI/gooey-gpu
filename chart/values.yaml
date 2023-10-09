@@ -270,7 +270,7 @@ deployments:
         wav2lip_gan.pth
 
   - name: "retro-u2net-dis"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:f8a986878205b0cbacc956917720f7dc696c85740ca19f47050e743743749885"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:bed82b71fe4d524f43de25e04c59a185d909c6bb5cb01ddb66079652867d74d8"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
@@ -287,7 +287,7 @@ deployments:
           isnet-general-use.pth
 
   - name: "retro-nemo-asr"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:f8a986878205b0cbacc956917720f7dc696c85740ca19f47050e743743749885"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:bed82b71fe4d524f43de25e04c59a185d909c6bb5cb01ddb66079652867d74d8"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
@@ -303,7 +303,7 @@ deployments:
           https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "common-audio-ldm-bark"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:8eb9a3580d9fa35eb0d9ddc2025782b7a171671bc11aa91683bf73ed2117c9ef"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:22485dcda2560bffd1b863d9779421dca1012bc966a47aa2a120205820a85683"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"

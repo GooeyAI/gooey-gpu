@@ -18,7 +18,8 @@ docker tag $IMG us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/$VARIANT
 docker rm -f $IMG || true
 docker run \
   -e IMPORTS="
-    retro.wav2lip
+    common.diffusion
+    retro.dis
   " \
   -e WAV2LIP_MODEL_IDS="
     wav2lip_gan.pth
@@ -37,9 +38,8 @@ docker run \
     vasista22/whisper-hindi-large-v2
   " \
   -e SD_MODEL_IDS="
-    runwayml/stable-diffusion-v1-5
-    stabilityai/stable-diffusion-2-1
-    Lykon/DreamShaper
+    stabilityai/stable-diffusion-2-inpainting
+    runwayml/stable-diffusion-inpainting
   " \
   -e CONTROLNET_MODEL_IDS="
     lllyasviel/sd-controlnet-canny
@@ -54,6 +54,12 @@ docker run \
     ioclab/control_v1p_sd15_brightness
     monster-labs/control_v1p_sd15_qrcode_monster/v2
   " \
+  -e DIS_MODEL_IDS="
+    isnet-general-use.pth
+  "\
+  -e U2NET_MODEL_IDS="
+    u2net
+  "\
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
   -e HUGGING_FACE_HUB_TOKEN=$HUGGING_FACE_HUB_TOKEN \

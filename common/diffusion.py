@@ -53,6 +53,7 @@ def img2img(pipeline: PipelineInfo, inputs: Img2ImgInputs):
 @gooey_gpu.endpoint
 def inpaint(pipeline: PipelineInfo, inputs: InpaintInputs):
     image = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
+    mask_image = gooey_gpu.download_images(inputs.mask_image, MAX_IMAGE_SIZE)
     return predict_and_upload(
         pipe_cls=AutoPipelineForInpainting,
         base_cls=AutoPipelineForText2Image,
@@ -60,7 +61,7 @@ def inpaint(pipeline: PipelineInfo, inputs: InpaintInputs):
         inputs=inputs,
         inputs_extra=dict(
             image=image,
-            mask_image=gooey_gpu.download_images(inputs.mask_image, MAX_IMAGE_SIZE),
+            mask_image=mask_image,
             width=image[0].width,
             height=image[0].height,
         ),

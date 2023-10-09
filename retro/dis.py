@@ -36,7 +36,6 @@ def dis(pipeline: PipelineInfo, inputs: DISInputs):
         pass
     input_size = [1024, 1024]
     for i, im_path in tqdm(enumerate(inputs.images), total=len(inputs.images)):
-        print("im_path: ", im_path)
         im = io.imread(im_path)
         if len(im.shape) < 3:
             im = im[:, :, np.newaxis]
@@ -55,8 +54,8 @@ def dis(pipeline: PipelineInfo, inputs: DISInputs):
         ma = torch.max(result)
         mi = torch.min(result)
         result = (result - mi) / (ma - mi)
-        im = (result * 255).permute(1, 2, 0).cpu().data.numpy().astype(np.uint8)
-        im_pil = PIL.Image.fromarray(im)
+        im = (result * 255).squeeze().cpu().data.numpy().astype(np.uint8)
+        im_pil = PIL.Image.fromarray(im, mode="L")
         gooey_gpu.upload_image(im_pil, pipeline.upload_urls[i])
 
 
@@ -77,6 +76,6 @@ def setup(model_id):
 
 
 setup_queues(
-    model_ids=os.environ["DIS_MODEL_IDS"].split(","),
+    model_ids=os.environ["DIS_MODEL_IDS"].split(),
     load_fn=setup,
 )
