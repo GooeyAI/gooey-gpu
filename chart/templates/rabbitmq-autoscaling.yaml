@@ -1,0 +1,44 @@
+{{- if .Values.rabbitmqAutoscaling.enabled }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-rabbitmq-secret
+data:
+  host: "{{ $.Values.commonEnv.CLUSTER_WIDE_BROKER_URL | b64enc }}"
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-rabbitmq-conn-new
+  namespace: default
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: keda-rabbitmq-secret
+      key: host
+{{- end }}
+
+{{- range .Values.rabbitmqAutoscaling.deployments }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: "{{ $.Release.Name }}-rabbitmq-scaledobject-{{ .name }}"
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: "{{ $.Release.Name }}-{{ .name }}"
+  minReplicaCount: {{ .minReplicaCount }}
+  maxReplicaCount: {{ .maxReplicaCount }}
+  pollingInterval: {{ .pollingInterval | default 3 }}
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: amqp
+        queueName: "{{ .queueName }}"
+        mode: QueueLength
+        value: "{{ .queueLength }}"
+      authenticationRef:
+        name: keda-trigger-auth-rabbitmq-conn-new
+{{- end }}

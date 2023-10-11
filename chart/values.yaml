@@ -5,6 +5,15 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
+rabbitmqAutoscaling:
+  enabled: true
+  deployments:
+    - name: "deforum-sd-2"
+      queueName: "gooey-gpu/Protogen_V2.2.ckpt"
+      queueLength: "2"  # tasks per replica
+      minReplicaCount: 2
+      maxReplicaCount: 12
+
 persistence:
   enabled: true
   storageClass: "premium-rwo"
@@ -100,6 +109,21 @@ deployments:
   - name: "deforum-sd-1"
     image: *deforumImg
     replicas: 6
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        deforum_sd
+      MODEL_IDS: |-
+        Protogen_V2.2.ckpt
+
+  - name: "deforum-sd-2"
+    image: *deforumImg
+    replicas: 2
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
