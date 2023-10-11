@@ -32,6 +32,7 @@ spec:
   minReplicaCount: {{ .minReplicaCount }}
   maxReplicaCount: {{ .maxReplicaCount }}
   pollingInterval: {{ .pollingInterval | default 3 }}
+  cooldownPeriod: {{ .cooldownPeriod | default 1200 }}
   triggers:
     - type: rabbitmq
       metadata:
