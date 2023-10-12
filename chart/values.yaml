@@ -10,9 +10,14 @@ rabbitmqAutoscaling:
   deployments:
     - name: "deforum-sd-1"
       queueName: "gooey-gpu/Protogen_V2.2.ckpt"
-      queueLength: "3"  # tasks per replica
+      queueLength: "2"  # tasks per replica
       minReplicaCount: 2
       maxReplicaCount: 12
+    - name: "common-diffusion-4"
+      queueName: "gooey-gpu/timbrooks/instruct-pix2pix"
+      queueLength: 2
+      minReplicaCount: 1
+      maxReplicaCount: 4
 
 persistence:
   enabled: true
@@ -81,7 +86,7 @@ deployments:
 
   - name: "common-diffusion-4"
     image: *commonImg
-    replicas: 4
+    replicas: 2
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
