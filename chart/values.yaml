@@ -15,7 +15,7 @@ rabbitmqAutoscaling:
       maxReplicaCount: 12
     - name: "common-diffusion-4"
       queueName: "gooey-gpu/timbrooks/instruct-pix2pix"
-      queueLength: 2
+      queueLength: "2"
       minReplicaCount: 1
       maxReplicaCount: 4
 
