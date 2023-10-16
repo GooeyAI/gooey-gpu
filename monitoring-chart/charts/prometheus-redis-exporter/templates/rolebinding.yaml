@@ -3,6 +3,7 @@ apiVersion: {{ template "rbac.apiVersion" . }}
 kind: RoleBinding
 metadata:
   name: {{ template "prometheus-redis-exporter.fullname" . }}
+  namespace: {{ template "prometheus-redis-exporter.namespace" . }}
   labels:
 {{ include "prometheus-redis-exporter.labels" . | indent 4 }}
 roleRef:
