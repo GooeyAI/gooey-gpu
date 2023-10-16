@@ -1,0 +1,43 @@
+## Configuration for the kube-prometheus-stack subchart
+##
+kube-prometheus-stack:
+  ## Override the deployment namespace
+  ##
+  namespaceOverride: "monitoring"
+
+## Toggle switch for redis exporter subchart
+## 
+redisExporter:
+  enabled: true
+
+## Configuration for redis exporter subchart
+##
+prometheus-redis-exporter:
+  namespaceOverride: "default"
+
+  auth:
+    enabled: true
+    secret:
+      name: "redis-ha-1"
+      key: "auth"
+
+  serviceMonitor:
+    enabled: true
+    multipleTarget: true
+    targets:
+      - url: "redis://redis-ha-1-server-0.default.pod.cluster.local:6379"
+        name: "redis-ha-1-server-0"
+      - url: "redis://redis-ha-1-server-1.default.pod.cluster.local:6379"
+        name: "redis-ha-1-server-1"
+      - url: "redis://redis-ha-1-server-2.default.pod.cluster.local:6379"
+        name: "redis-ha-1-server-2"
+
+## Toggle switch for rabbitmq exporter subchart
+##
+rabbitmqExporter:
+  enabled: true
+
+## Configuration for rabbitmq exporter subchart
+##
+prometheus-rabbitmq-exporter:
+  namespaceOverride: "default"
