@@ -41,3 +41,9 @@ rabbitmqExporter:
 ##
 prometheus-rabbitmq-exporter:
   namespaceOverride: "default"
+
+  rabbitmq:
+    url: "http://rabbitmq-1-rabbitmq-0:15672"
+    user: "rabbit"
+    existingPasswordSecret: "rabbitmq-1-rabbitmq-secret"
+    existingPasswordSecretKey: "rabbitmq-pass"
