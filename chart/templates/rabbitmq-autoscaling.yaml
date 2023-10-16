@@ -1,22 +1,14 @@
 {{- if .Values.rabbitmqAutoscaling.enabled }}
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: keda-rabbitmq-secret
-data:
-  host: "{{ $.Values.commonEnv.CLUSTER_WIDE_BROKER_URL | b64enc }}"
----
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: keda-trigger-auth-rabbitmq-conn-new
+  name: keda-trigger-auth-rabbitmq-conn
   namespace: default
 spec:
-  secretTargetRef:
+  env:
     - parameter: host
-      name: keda-rabbitmq-secret
-      key: host
+      name: BROKER_URL
 {{- end }}
 
 {{- range .Values.rabbitmqAutoscaling.deployments }}
@@ -41,5 +33,5 @@ spec:
         mode: QueueLength
         value: "{{ .queueLength }}"
       authenticationRef:
-        name: keda-trigger-auth-rabbitmq-conn-new
+        name: keda-trigger-auth-rabbitmq-conn
 {{- end }}
