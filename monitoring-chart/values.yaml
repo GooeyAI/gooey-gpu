@@ -1,3 +1,8 @@
+serviceMonitors:
+  - name: "redis-ha-1"
+    namespace: "default"
+    port: "exporter-port"
+
 ## Configuration for the kube-prometheus-stack subchart
 ##
 kube-prometheus-stack:
@@ -5,32 +10,15 @@ kube-prometheus-stack:
   ##
   namespaceOverride: "monitoring"
 
-## Toggle switch for redis exporter subchart
-## 
-redisExporter:
-  enabled: true
-
-## Configuration for redis exporter subchart
-##
-prometheus-redis-exporter:
-  namespaceOverride: "default"
-
-  auth:
-    enabled: true
-    secret:
-      name: "redis-ha-1"
-      key: "auth"
-
-  serviceMonitor:
-    enabled: true
-    multipleTarget: true
-    targets:
-      - url: "redis://redis-ha-1-server-0.default.pod.cluster.local:6379"
-        name: "redis-ha-1-server-0"
-      - url: "redis://redis-ha-1-server-1.default.pod.cluster.local:6379"
-        name: "redis-ha-1-server-1"
-      - url: "redis://redis-ha-1-server-2.default.pod.cluster.local:6379"
-        name: "redis-ha-1-server-2"
+  prometheus:
+    prometheusSpec:
+      ## Scrape metrics from all service/pod monitors
+      ## in the cluster with no filtering
+      ##
+      serviceMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorSelector: {}
+      podMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelector: {}
 
 ## Toggle switch for rabbitmq exporter subchart
 ##
@@ -42,8 +30,14 @@ rabbitmqExporter:
 prometheus-rabbitmq-exporter:
   namespaceOverride: "default"
 
+  prometheus:
+    monitor:
+      enabled: true
+      namespace:
+        - "default"
+
   rabbitmq:
-    url: "http://rabbitmq-1-rabbitmq-0:15672"
+    url: "http://rabbitmq-1-rabbitmq-svc:15672"
     user: "rabbit"
     existingPasswordSecret: "rabbitmq-1-rabbitmq-secret"
     existingPasswordSecretKey: "rabbitmq-pass"

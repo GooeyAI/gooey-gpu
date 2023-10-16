@@ -29,11 +29,6 @@ dependencies:
   - name: kube-prometheus-stack
     version: "51.8.*"
     repository: https://prometheus-community.github.io/helm-charts
-  - name: prometheus-redis-exporter
-    condition: redisExporter.enabled
-    version: "6.0.*"
-    # TEMPORARY fetched from charts/prometheus-redis-exporter instead
-    # repository: https://prometheus-community.github.io/helm-charts
   - name: prometheus-rabbitmq-exporter
     condition: rabbitmqExporter.enabled
     version: "1.9.*"
