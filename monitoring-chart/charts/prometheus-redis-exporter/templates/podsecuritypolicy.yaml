@@ -3,6 +3,7 @@ apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: {{ template "prometheus-redis-exporter.fullname" . }}
+  namespace: {{ template "prometheus-redis-exporter.namespace" . }}
   labels:
 {{ include "prometheus-redis-exporter.labels" . | indent 4 }}
   annotations:

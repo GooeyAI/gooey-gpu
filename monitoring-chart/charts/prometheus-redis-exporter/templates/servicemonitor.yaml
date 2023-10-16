@@ -12,6 +12,8 @@ metadata:
   name: {{ template "prometheus-redis-exporter.fullname" . }}
 {{- if .Values.serviceMonitor.namespace }}
   namespace: {{ .Values.serviceMonitor.namespace }}
+{{- else }}
+  namespace: {{ template "prometheus-redis-exporter.namespace" . }}
 {{- end }}
 spec:
   endpoints:
