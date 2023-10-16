@@ -1,6 +1,9 @@
 k8s/
 values.yaml
 
+# Chart dependencies
+**/charts/*.tgz
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,macOS
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,macOS
 
