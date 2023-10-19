@@ -317,7 +317,7 @@ deployments:
           cvssp/audioldm
 
   - name: "common-seamless"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:90177d5c64c64a0ecc511525315d4fe4cde3f3d0ac527d30bf9e15554e41bb47"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:3a3417ff776ad2ebb2dd17a0938cc34f2799f7703ee419dca42d1710e552d8b4"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
