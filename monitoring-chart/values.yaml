@@ -1,0 +1,43 @@
+serviceMonitors:
+  - name: "redis-ha-1"
+    namespace: "default"
+    port: "exporter-port"
+
+## Configuration for the kube-prometheus-stack subchart
+##
+kube-prometheus-stack:
+  ## Override the deployment namespace
+  ##
+  namespaceOverride: "monitoring"
+
+  prometheus:
+    prometheusSpec:
+      ## Scrape metrics from all service/pod monitors
+      ## in the cluster with no filtering
+      ##
+      serviceMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorSelector: {}
+      podMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelector: {}
+
+## Toggle switch for rabbitmq exporter subchart
+##
+rabbitmqExporter:
+  enabled: true
+
+## Configuration for rabbitmq exporter subchart
+##
+prometheus-rabbitmq-exporter:
+  namespaceOverride: "default"
+
+  prometheus:
+    monitor:
+      enabled: true
+      namespace:
+        - "default"
+
+  rabbitmq:
+    url: "http://rabbitmq-1-rabbitmq-svc:15672"
+    user: "rabbit"
+    existingPasswordSecret: "rabbitmq-1-rabbitmq-secret"
+    existingPasswordSecretKey: "rabbitmq-pass"
