@@ -311,3 +311,17 @@ deployments:
         common.suno_ai_bark
       AUDIO_LDM_MODEL_IDS: |-
           cvssp/audioldm
+
+  - name: "common-seamless"
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.seamless
+      WHISPER_MODEL_IDS: |-
+        seamlessM4T_large
