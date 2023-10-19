@@ -301,10 +301,11 @@ deployments:
           https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "common-audio-ldm-bark"
-    image: *retroImg
+    image: *commonImg
     replicas: 1
     nodeSelector:
-      gooey.ai/gpu: a100-40g
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
       memory: "15Gi"
       cpu: "1"
