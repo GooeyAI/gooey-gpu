@@ -1,0 +1,37 @@
+{{- if .Values.rabbitmqAutoscaling.enabled }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-rabbitmq-conn
+  namespace: default
+spec:
+  env:
+    - parameter: host
+      name: BROKER_URL
+{{- end }}
+
+{{- range .Values.rabbitmqAutoscaling.deployments }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: "{{ $.Release.Name }}-rabbitmq-scaledobject-{{ .name }}"
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: "{{ $.Release.Name }}-{{ .name }}"
+  minReplicaCount: {{ .minReplicaCount }}
+  maxReplicaCount: {{ .maxReplicaCount }}
+  pollingInterval: {{ .pollingInterval | default 3 }}
+  cooldownPeriod: {{ .cooldownPeriod | default 1200 }}
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: amqp
+        queueName: "{{ .queueName }}"
+        mode: QueueLength
+        value: "{{ .queueLength }}"
+      authenticationRef:
+        name: keda-trigger-auth-rabbitmq-conn
+{{- end }}

@@ -13,4 +13,8 @@ RUN wget -qO webui.sh https://raw.githubusercontent.com/AUTOMATIC1111/stable-dif
 
 WORKDIR /stable-diffusion-webui
 
-CMD source venv/bin/activate && python3 launch.py --skip-install --api --ckpt-dir /root/.cache/gooey-gpu/stable-diffusion-webui
+ENTRYPOINT bash -c "\
+  source venv/bin/activate && python3 launch.py \
+    --skip-install --api --api-log --listen --cors-allow-origins '*' \
+    --ckpt-dir /root/.cache/gooey-gpu/stable-diffusion-webui \
+"

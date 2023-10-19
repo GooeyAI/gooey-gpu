@@ -1,10 +1,12 @@
 import os
 import shutil
 import sys
+import typing
 from functools import lru_cache
 
 import PIL.Image
 import torch
+from pydantic import BaseModel
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torchvision import transforms  # , utils
@@ -23,16 +25,20 @@ from model import U2NETP  # small version u2net 4.7 MB
 from u2net_test import normPRED, save_output
 
 
+class U2NetInputs(BaseModel):
+    images: typing.List[str]
+
+
 @app.task(name="u2net")
 @gooey_gpu.endpoint
-def u2net(pipeline: PipelineInfo, inputs: list[str]):
+def u2net(pipeline: PipelineInfo, inputs: U2NetInputs):
     net = load_model(pipeline.model_id)
     prediction_dir = "outputs/"
 
     # --------- 2. dataloader ---------
     # 1. dataloader
     test_salobj_dataset = SalObjDataset(
-        img_name_list=inputs,
+        img_name_list=inputs.images,
         lbl_name_list=[],
         transform=transforms.Compose([RescaleT(320), ToTensorLab(flag=0)]),
     )
@@ -42,7 +48,7 @@ def u2net(pipeline: PipelineInfo, inputs: list[str]):
 
     # --------- 4. inference for each image ---------
     for i_test, data_test in enumerate(test_salobj_dataloader):
-        print("inferencing:", inputs[i_test].split(os.sep)[-1])
+        print("inferencing:", inputs.images[i_test].split(os.sep)[-1])
 
         inputs_test = data_test["image"]
         inputs_test = inputs_test.type(torch.FloatTensor)
@@ -61,7 +67,7 @@ def u2net(pipeline: PipelineInfo, inputs: list[str]):
         # save results to test_results folder
         shutil.rmtree(prediction_dir, ignore_errors=True)
         os.makedirs(prediction_dir, exist_ok=True)
-        save_output(inputs[i_test], pred, prediction_dir)
+        save_output(inputs.images[i_test], pred, prediction_dir)
 
         # upload image
         out_path = prediction_dir + os.listdir(prediction_dir)[0]
@@ -94,6 +100,6 @@ def load_model(model_id):
 
 
 setup_queues(
-    model_ids=os.environ["U2NET_MODEL_IDS"].split(","),
+    model_ids=os.environ["U2NET_MODEL_IDS"].split(),
     load_fn=load_model,
 )

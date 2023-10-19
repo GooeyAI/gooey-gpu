@@ -60,7 +60,10 @@ def endpoint(fn):
                 kwargs[k] = model.parse_obj(kwargs[k])
         print(f"---> {fn.__name__}: {kwargs!r}")
         try:
-            return fn(*args, **kwargs)
+            ret = fn(*args, **kwargs)
+            if isinstance(ret, BaseModel):
+                ret = ret.dict()
+            return ret
         finally:
             gc.collect()
             torch.cuda.empty_cache()

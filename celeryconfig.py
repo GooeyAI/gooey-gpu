@@ -17,16 +17,26 @@ app.conf.update(
 )
 
 
+init_fns = []
+
+
+@worker_init.connect()
+def init_all(**kwargs):
+    for fn in init_fns:
+        fn(**kwargs)
+
+
 def setup_queues(
     *,
-    model_ids: list[str],
-    load_fn: typing.Callable[[str], None],
+    model_ids: typing.List[str],
+    load_fn: typing.Callable[[str], typing.Any],
     queue_prefix: str = os.environ.get("QUEUE_PREFIX", "gooey-gpu"),
 ):
-    @worker_init.connect()
     def init(**kwargs):
         for model_id in model_ids:
             load_fn(model_id)
+
+    init_fns.append(init)
 
     app.conf.task_queues = app.conf.task_queues or []
     for model_id in model_ids:

@@ -1,10 +1,13 @@
 import os
+import sys
+import typing
 from functools import lru_cache
 
+import PIL.Image
 import numpy as np
 import torch
 import torch.nn.functional as F
-from cog import Path
+from pydantic import BaseModel
 from skimage import io
 from torchvision.transforms.functional import normalize
 from tqdm import tqdm
@@ -13,14 +16,18 @@ import gooey_gpu
 from api import PipelineInfo
 from celeryconfig import app, setup_queues
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "DIS"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "DIS", "IS-Net"))
 
 from models import ISNetDIS
 
 
+class DISInputs(BaseModel):
+    images: typing.List[str]
+
+
 @app.task(name="dis")
 @gooey_gpu.endpoint
-def dis(pipeline: PipelineInfo, inputs: list[str]):
+def dis(pipeline: PipelineInfo, inputs: DISInputs):
     """Run a single prediction on the model"""
     net = setup(pipeline.model_id)
     try:
@@ -28,8 +35,7 @@ def dis(pipeline: PipelineInfo, inputs: list[str]):
     except FileNotFoundError:
         pass
     input_size = [1024, 1024]
-    for i, im_path in tqdm(enumerate(inputs), total=len(inputs)):
-        print("im_path: ", im_path)
+    for i, im_path in tqdm(enumerate(inputs.images), total=len(inputs.images)):
         im = io.imread(im_path)
         if len(im.shape) < 3:
             im = im[:, :, np.newaxis]
@@ -48,11 +54,9 @@ def dis(pipeline: PipelineInfo, inputs: list[str]):
         ma = torch.max(result)
         mi = torch.min(result)
         result = (result - mi) / (ma - mi)
-        io.imsave(
-            "out.png",
-            (result * 255).permute(1, 2, 0).cpu().data.numpy().astype(np.uint8),
-        )
-    return Path("out.png")
+        im = (result * 255).squeeze().cpu().data.numpy().astype(np.uint8)
+        im_pil = PIL.Image.fromarray(im, mode="L")
+        gooey_gpu.upload_image(im_pil, pipeline.upload_urls[i])
 
 
 @lru_cache
@@ -72,6 +76,6 @@ def setup(model_id):
 
 
 setup_queues(
-    model_ids=os.environ["DIS_MODEL_IDS"].split(","),
+    model_ids=os.environ["DIS_MODEL_IDS"].split(),
     load_fn=setup,
 )

@@ -1,5 +1,5 @@
 commonEnv:
-  BROKER_URL: "amqp://username:password@host:5672"
+  BROKER_URL: "amqp://username:password@service-name.svc.cluster.local:5672"
   RESULT_BACKEND: "redis://:password@host"
   SENTRY_DSN: "XXXX"
   HUGGING_FACE_HUB_TOKEN: "hf_XXXX"

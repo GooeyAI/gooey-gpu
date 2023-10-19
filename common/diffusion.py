@@ -1,6 +1,7 @@
 import os
 from functools import lru_cache
 
+import PIL.ImageOps
 import torch
 from diffusers import (
     AutoPipelineForText2Image,
@@ -53,6 +54,8 @@ def img2img(pipeline: PipelineInfo, inputs: Img2ImgInputs):
 @gooey_gpu.endpoint
 def inpaint(pipeline: PipelineInfo, inputs: InpaintInputs):
     image = gooey_gpu.download_images(inputs.image, MAX_IMAGE_SIZE)
+    mask_image = gooey_gpu.download_images(inputs.mask_image, MAX_IMAGE_SIZE)
+    mask_image = [PIL.ImageOps.invert(im) for im in mask_image]
     return predict_and_upload(
         pipe_cls=AutoPipelineForInpainting,
         base_cls=AutoPipelineForText2Image,
@@ -60,7 +63,7 @@ def inpaint(pipeline: PipelineInfo, inputs: InpaintInputs):
         inputs=inputs,
         inputs_extra=dict(
             image=image,
-            mask_image=gooey_gpu.download_images(inputs.mask_image, MAX_IMAGE_SIZE),
+            mask_image=mask_image,
             width=image[0].width,
             height=image[0].height,
         ),
@@ -154,7 +157,7 @@ def _load_pipe(
 
 
 @lru_cache
-def _load_pipe_cached(model_id: str, pipe_cls=AutoPipelineForText2Image):
+def _load_pipe_cached(model_id: str, pipe_cls):
     print(f"Loading SD model {model_id!r}...")
     pipe = pipe_cls.from_pretrained(model_id, torch_dtype=torch.float16)
     pipe = pipe.to(gooey_gpu.DEVICE_ID)
@@ -192,5 +195,7 @@ def safety_checker_wrapper(pipe, disabled: bool):
 
 setup_queues(
     model_ids=os.environ["SD_MODEL_IDS"].split(),
-    load_fn=_load_pipe_cached,
+    load_fn=lambda model_id: _load_pipe_cached(
+        model_id, pipe_cls=AutoPipelineForText2Image
+    ),
 )
