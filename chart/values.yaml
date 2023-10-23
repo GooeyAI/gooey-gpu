@@ -327,6 +327,6 @@ deployments:
       cpu: "1"
     env:
       IMPORTS: |-
-        common.seamless
+        common.seamless_asr
       SEAMLESS_MODEL_IDS: |-
-        seamlessM4T_large
+        facebook/hf-seamless-m4t-large
