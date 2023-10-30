@@ -86,7 +86,7 @@ deployments:
 
   - name: "common-diffusion-4"
     image: *commonImg
-    replicas: 2
+    replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
@@ -128,7 +128,7 @@ deployments:
 
   - name: "deforum-sd-epicdream"
     image: *deforumImg
-    replicas: 2
+    replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
