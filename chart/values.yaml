@@ -317,7 +317,7 @@ deployments:
           cvssp/audioldm
 
   - name: "common-seamless"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:3a3417ff776ad2ebb2dd17a0938cc34f2799f7703ee419dca42d1710e552d8b4"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:1ea2b9d02dbcdc57cf1c404d8ab281384dc40d6e65bc59ba2b8f47dd2de560ea"
     replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
@@ -330,3 +330,4 @@ deployments:
         common.seamless_asr
       SEAMLESS_MODEL_IDS: |-
         facebook/hf-seamless-m4t-large
+        facebook/hf-seamless-m4t-medium

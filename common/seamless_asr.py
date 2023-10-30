@@ -1,11 +1,9 @@
 import os
 from functools import lru_cache
 
-import numpy as np
 import requests
 import torch
 import transformers
-from transformers.models.seamless_m4t.tokenization_seamless_m4t import SeamlessM4TTokenizer
 
 import gooey_gpu
 from api import SeamlessM4TInputs, SeamlessM4TPipeline, AsrOutput

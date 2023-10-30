@@ -126,8 +126,8 @@ class AsrOutput(BaseModel):
 class SeamlessM4TPipeline(BaseModel):
     upload_urls: typing.List[str] = []
     model_id: typing.Literal[
-        "seamlessM4T_large", "seamlessM4T_medium"
-    ] = "seamlessM4T_large"
+        "facebook/hf-seamless-m4t-large", "facebook/hf-seamless-m4t-medium"
+    ] = "facebook/hf-seamless-m4t-large"
 
 
 class SeamlessM4TInputs(BaseModel):
