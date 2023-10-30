@@ -21,9 +21,6 @@ docker run \
     common.whisper
   " \
   -e QUEUE_PREFIX="gooey-gpu/short" \
-  -e SEAMLESS_MODEL_IDS="
-    facebook/hf-seamless-m4t-large
-  " \
   -e WAV2LIP_MODEL_IDS="
     wav2lip_gan.pth
   " \
