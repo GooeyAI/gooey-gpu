@@ -18,8 +18,11 @@ docker tag $IMG us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/$VARIANT
 docker rm -f $IMG || true
 docker run \
   -e IMPORTS="
-    common.diffusion
-    retro.dis
+    common.whisper
+  " \
+  -e QUEUE_PREFIX="gooey-gpu/short" \
+  -e SEAMLESS_MODEL_IDS="
+    facebook/hf-seamless-m4t-large
   " \
   -e WAV2LIP_MODEL_IDS="
     wav2lip_gan.pth

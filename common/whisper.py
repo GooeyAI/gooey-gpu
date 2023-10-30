@@ -20,27 +20,31 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
     kwargs = {}
     if inputs.return_timestamps:
         kwargs["return_timestamps"] = True
-    if inputs.language:
         kwargs["generate_kwargs"] = dict(
+            no_timestamps_token_id=50363,
+        )
+    if inputs.language:
+        kwargs.setdefault("generate_kwargs", {})
+        kwargs["generate_kwargs"].update(
             forced_decoder_ids=pipe.tokenizer.get_decoder_prompt_ids(
                 task=inputs.task, language=inputs.language
             )
         )
     # see https://github.com/huggingface/transformers/issues/24707
-    old_postprocess = pipe.postprocess
-    if inputs.decoder_kwargs:
+    # old_postprocess = pipe.postprocess
+    # if inputs.decoder_kwargs:
 
-        def postprocess(model_outputs):
-            final_items = []
-            key = "tokens"
-            for outputs in model_outputs:
-                items = outputs[key].numpy()
-                final_items.append(items)
-            items = np.concatenate(final_items, axis=1)
-            items = items.squeeze(0)
-            return {"text": pipe.tokenizer.decode(items, **inputs.decoder_kwargs)}
+    #     def postprocess(model_outputs):
+    #         final_items = []
+    #         key = "tokens"
+    #         for outputs in model_outputs:
+    #             items = outputs[key].numpy()
+    #             final_items.append(items)
+    #         items = np.concatenate(final_items, axis=1)
+    #         items = items.squeeze(0)
+    #         return {"text": pipe.tokenizer.decode(items, **inputs.decoder_kwargs)}
 
-        pipe.postprocess = postprocess
+    #     pipe.postprocess = postprocess
 
     prediction = pipe(
         audio,
@@ -48,11 +52,12 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
         chunk_length_s=inputs.chunk_length_s,
         stride_length_s=inputs.stride_length_s,
         batch_size=inputs.batch_size,
+        decoder_kwargs=inputs.decoder_kwargs,
         **kwargs,
     )
 
-    if inputs.decoder_kwargs:
-        pipe.postprocess = old_postprocess
+    # if inputs.decoder_kwargs:
+    #     pipe.postprocess = old_postprocess
 
     return prediction
 
