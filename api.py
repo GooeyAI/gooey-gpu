@@ -138,6 +138,10 @@ class SeamlessM4TInputs(BaseModel):
     tgt_lang: str | None = "eng"  # ignored for ASR (only src_lang is used)
     # seamless uses ISO 639-3 codes for languages
 
+    chunk_length_s: float = 30
+    stride_length_s: typing.Tuple[float, float] = (6, 0)
+    batch_size: int = 16
+
 
 class SeamlessM4TOutput(typing.TypedDict):
     text: str | None
