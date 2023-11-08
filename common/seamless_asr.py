@@ -24,15 +24,15 @@ def seamless_asr(
         previous_src_lang = pipe.tokenizer.src_lang
         pipe.tokenizer.src_lang = inputs.src_lang
 
+    tgt_lang = inputs.tgt_lang or inputs.src_lang or "eng"
+
     prediction = pipe(
         audio,
         # see https://colab.research.google.com/drive/1rS1L4YSJqKUH_3YxIQHBI982zso23wor#scrollTo=Ca4YYdtATxzo&line=5&uniqifier=1
         chunk_length_s=inputs.chunk_length_s,
         stride_length_s=inputs.stride_length_s,
         batch_size=inputs.batch_size,
-        generate_kwargs=dict(
-            tgt_lang=inputs.tgt_lang,
-        ),
+        generate_kwargs=dict(tgt_lang=tgt_lang),
     )
 
     if previous_src_lang:

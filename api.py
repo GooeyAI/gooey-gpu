@@ -135,7 +135,7 @@ class SeamlessM4TInputs(BaseModel):
     text: str | None  # required for T2ST and T2TT
     task: typing.Literal["S2ST", "T2ST", "S2TT", "T2TT", "ASR"] = "ASR"
     src_lang: str | None = None  # required for T2ST and T2TT
-    tgt_lang: str | None = "eng"  # ignored for ASR (only src_lang is used)
+    tgt_lang: str | None = None  # ignored for ASR (only src_lang is used)
     # seamless uses ISO 639-3 codes for languages
 
     chunk_length_s: float = 30
