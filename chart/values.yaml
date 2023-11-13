@@ -13,7 +13,7 @@ rabbitmqAutoscaling:
       queueLength: "2"  # tasks per replica
       minReplicaCount: 2
       maxReplicaCount: 12
-    - name: "common-diffusion-4"
+    - name: "common-diffusion-instruct-pix2pix"
       queueName: "gooey-gpu/timbrooks/instruct-pix2pix"
       queueLength: "2"
       minReplicaCount: 1
@@ -84,15 +84,14 @@ deployments:
         stabilityai/stable-diffusion-2-inpainting
         runwayml/stable-diffusion-inpainting
 
-  - name: "common-diffusion-4"
+  - name: "common-diffusion-instruct-pix2pix"
     image: *commonImg
     replicas: 1
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+      cloud.google.com/gke-accelerator: "nvidia-l4"
     limits:
-      memory: "15Gi"
-      cpu: "1"
+      memory: "12Gi"
+      cpu: "3"
     env:
       IMPORTS: |-
         common.diffusion
@@ -141,7 +140,7 @@ deployments:
       MODEL_IDS: |-
         epicdream.safetensors
 
-  - name: "common-whisper-short"
+  - name: "common-whisper-en-short"
     image: *commonImg
     replicas: 1
     nodeSelector:
@@ -156,7 +155,7 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         openai/whisper-large-v2
-  - name: "common-whisper-short-telugu"
+  - name: "common-whisper-te-short"
     image: *commonImg
     replicas: 1
     nodeSelector:
@@ -171,38 +170,8 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         vasista22/whisper-telugu-large-v2
-  - name: "common-whisper-short-hindi"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        vasista22/whisper-hindi-large-v2
-  - name: "common-asr-short"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
 
-  - name: "common-whisper-long"
+  - name: "common-whisper-en-te-long"
     image: *commonImg
     replicas: 1
     nodeSelector:
@@ -216,9 +185,8 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         openai/whisper-large-v2
-        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
-
-  - name: "common-whisper-long-indic"
+        vasista22/whisper-telugu-large-v2
+  - name: "common-whisper-hi-bho-long"
     image: *commonImg
     replicas: 1
     nodeSelector:
@@ -231,8 +199,23 @@ deployments:
       IMPORTS: |-
         common.whisper
       WHISPER_MODEL_IDS: |-
-        vasista22/whisper-telugu-large-v2
         vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+  - name: "common-whisper-hi-bho-short"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+    limits:
+      memory: "12Gi"
+      cpu: "3"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
 
   - name: "common-embeddings-1"
     image: *commonImg
