@@ -8,16 +8,26 @@ autoscaling:
 rabbitmqAutoscaling:
   enabled: true
   deployments:
-    - name: "deforum-sd-1"
-      queueName: "gooey-gpu/Protogen_V2.2.ckpt"
-      queueLength: "2"  # tasks per replica
-      minReplicaCount: 2
-      maxReplicaCount: 12
     - name: "common-diffusion-instruct-pix2pix"
       queueName: "gooey-gpu/timbrooks/instruct-pix2pix"
       queueLength: "2"
       minReplicaCount: 1
       maxReplicaCount: 4
+    - name: "deforum-sd-1"
+      queueName: "gooey-gpu/Protogen_V2.2.ckpt"
+      queueLength: "2"  # tasks per replica
+      minReplicaCount: 2
+      maxReplicaCount: 12
+    - name: "deforum-sd-epicdream"
+      queueName: "gooey-gpu/epicdream.safetensors"
+      queueLength: "2"
+      minReplicaCount: 0
+      maxReplicaCount: 1
+    - name: "common-audio-ldm-bark"
+      queueName: "gooey-gpu/cvssp/audioldm"
+      queueLength: "2"
+      minReplicaCount: 0
+      maxReplicaCount: 1
 
 persistence:
   enabled: true
@@ -99,6 +109,7 @@ deployments:
         timbrooks/instruct-pix2pix
   - name: "common-diffusion-upscale"
     image: *commonImg
+    replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-l4"
     limits:
@@ -127,7 +138,6 @@ deployments:
 
   - name: "deforum-sd-epicdream"
     image: *deforumImg
-    replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
@@ -297,4 +307,4 @@ deployments:
         common.audio_ldm
         common.suno_ai_bark
       AUDIO_LDM_MODEL_IDS: |-
-          cvssp/audioldm
+        cvssp/audioldm
