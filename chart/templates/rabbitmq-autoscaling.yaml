@@ -26,6 +26,19 @@ spec:
   pollingInterval: {{ .pollingInterval | default 3 }}
   cooldownPeriod: {{ .cooldownPeriod | default 1200 }}
   triggers:
+    {{- if .queueNames }}
+    {{- $queueLength := .queueLength }}
+    {{- range .queueNames }}
+    - type: rabbitmq
+      metadata:
+        protocol: amqp
+        queueName: "{{ .}}"
+        mode: QueueLength
+        value: "{{ $queueLength }}"
+      authenticationRef:
+        name: keda-trigger-auth-rabbitmq-conn
+    {{- end }}
+    {{- else }}
     - type: rabbitmq
       metadata:
         protocol: amqp
@@ -34,4 +47,5 @@ spec:
         value: "{{ .queueLength }}"
       authenticationRef:
         name: keda-trigger-auth-rabbitmq-conn
+    {{- end }}
 {{- end }}
