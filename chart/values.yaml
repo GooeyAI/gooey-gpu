@@ -28,7 +28,7 @@ rabbitmqAutoscaling:
       queueLength: "2"
       minReplicaCount: 0
       maxReplicaCount: 1
-    - name: "common-diffusion-new-on-demand"
+    - name: "common-diffusion-on-demand"
       minReplicaCount: 0
       maxReplicaCount: 1
       queueLength: "2"
@@ -84,7 +84,7 @@ deployments:
         dreamlike-art/dreamlike-photoreal-2.0
         runwayml/stable-diffusion-v1-5
 
-  - name: "common-diffusion-new-on-demand" # scales to zero
+  - name: "common-diffusion-on-demand" # scales to zero
     image: *commonImg
     replicas: 0
     nodeSelector:

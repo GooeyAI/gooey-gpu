@@ -16,7 +16,7 @@ spec:
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: "{{ $.Release.Name }}-rabbitmq-scaledobject-{{ .name }}"
+  name: "{{ $.Release.Name }}-rabbitmq-{{ .name }}"
   namespace: default
 spec:
   scaleTargetRef:
