@@ -191,15 +191,16 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         openai/whisper-large-v2
+
   - name: "common-whisper-te-short"
     image: *commonImg
     replicas: 1
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+      cloud.google.com/gke-accelerator: "nvidia-l4"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
-      memory: "15Gi"
-      cpu: "1"
+      memory: "12Gi"
+      cpu: "3"
     env:
       QUEUE_PREFIX: "gooey-gpu/short"
       IMPORTS: |-
