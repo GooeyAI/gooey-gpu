@@ -334,3 +334,20 @@ deployments:
         common.suno_ai_bark
       AUDIO_LDM_MODEL_IDS: |-
         cvssp/audioldm
+
+  - name: "common-seamless"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
+    replicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: "nvidia-l4"
+      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+    limits:
+      memory: "15Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.seamless_asr
+      SEAMLESS_MODEL_IDS: |-
+        facebook/hf-seamless-m4t-large
+        facebook/hf-seamless-m4t-medium
+
