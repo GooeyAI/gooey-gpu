@@ -350,3 +350,4 @@ deployments:
       SEAMLESS_MODEL_IDS: |-
         facebook/hf-seamless-m4t-large
         facebook/hf-seamless-m4t-medium
+
