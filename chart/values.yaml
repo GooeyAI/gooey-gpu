@@ -37,6 +37,13 @@ rabbitmqAutoscaling:
         - "gooey-gpu/prompthero/openjourney"
         - "gooey-gpu/prompthero/openjourney-v2"
         - "gooey-gpu/darkstorm2150/Protogen_v5.3_Official_Release"
+    - name: "common-seamless"
+      minReplicaCount: 0
+      maxReplicaCount: 1
+      queueLength: "2"
+      queueNames:
+        - "gooey-gpu/facebook/hf-seamless-m4t-large"
+        - "gooey-gpu/facebook/hf-seamless-m4t-medium"
 
 persistence:
   enabled: true
@@ -337,9 +344,9 @@ deployments:
 
   - name: "common-seamless"
     image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
-    replicas: 1
+    replicas: 0
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
+      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
     limits:
       memory: "15Gi"
