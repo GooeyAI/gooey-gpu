@@ -171,6 +171,7 @@ deployments:
 
   - name: "deforum-sd-epicdream"
     image: *deforumImg
+    replicas: 0
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
@@ -328,7 +329,7 @@ deployments:
 
   - name: "common-audio-ldm-bark"
     image: *commonImg
-    replicas: 1
+    replicas: 0
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
