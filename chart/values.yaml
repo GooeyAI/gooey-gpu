@@ -176,23 +176,7 @@ deployments:
       MODEL_IDS: |-
         epicdream.safetensors
 
-  - name: "common-whisper-en-short"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        openai/whisper-large-v2
-
-  - name: "common-whisper-te-short"
+  - name: "common-whisper-en-te-short"
     image: *commonImg
     replicas: 1
     nodeSelector:
@@ -206,6 +190,7 @@ deployments:
       IMPORTS: |-
         common.whisper
       WHISPER_MODEL_IDS: |-
+        openai/whisper-large-v2
         vasista22/whisper-telugu-large-v2
 
   - name: "common-whisper-en-te-long"
