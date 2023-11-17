@@ -23,11 +23,6 @@ rabbitmqAutoscaling:
       queueLength: "2"
       minReplicaCount: 0
       maxReplicaCount: 1
-    - name: "common-audio-ldm-bark"
-      queueName: "gooey-gpu/cvssp/audioldm"
-      queueLength: "2"
-      minReplicaCount: 0
-      maxReplicaCount: 1
     - name: "common-diffusion-on-demand"
       minReplicaCount: 0
       maxReplicaCount: 1
@@ -44,6 +39,13 @@ rabbitmqAutoscaling:
       queueNames:
         - "gooey-gpu/facebook/hf-seamless-m4t-large"
         - "gooey-gpu/facebook/hf-seamless-m4t-medium"
+    - name: "common-audio-ldm-bark"
+      minReplicaCount: 0
+      maxReplicaCount: 1
+      queueLength: "2"
+      queueNames:
+        - "gooey-gpu/bark"
+        - "gooey-gpu/cvssp/audioldm"
 
 persistence:
   enabled: true
@@ -329,7 +331,7 @@ deployments:
 
   - name: "common-audio-ldm-bark"
     image: *commonImg
-    replicas: 0
+    replicas: 1
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
       cloud.google.com/gke-max-shared-clients-per-gpu: "5"
@@ -342,6 +344,10 @@ deployments:
         common.suno_ai_bark
       AUDIO_LDM_MODEL_IDS: |-
         cvssp/audioldm
+      # BARK_MODEL_IDS env var is unused in code but here to
+      # note that bark queue is loaded by suno_ai_bark module
+      BARK_MODEL_IDS: |-
+        bark
 
   - name: "common-seamless"
     image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
