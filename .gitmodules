@@ -4,3 +4,6 @@
 [submodule "retro/DIS"]
 	path = retro/DIS
 	url = https://github.com/xuebinqin/DIS.git
+[submodule "retro/Wav2Lip"]
+	path = retro/Wav2Lip
+	url = https://github.com/Rudrabha/Wav2Lip.git

@@ -14,4 +14,4 @@ wget -c -O resnet50.pth 'https://github.com/elliottzheng/face-detection/releases
 pip install gdown
 
 python3 $DIR/retro/U-2-Net/setup_model_weights.py
-python3 -c 'import gdown; gdown.download("https://drive.google.com/uc?id=1nV57qKuy--d5u1yvkng9aXW1KS4sOpOi", "isnet-general-use.pth")'
+python3 -c 'import gdown; gdown.download("https://drive.google.com/uc?id=1XHIzgTzY5BQHw140EDIgwIb53K659ENH", "isnet-general-use.pth")'

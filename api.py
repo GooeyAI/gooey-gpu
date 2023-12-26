@@ -121,28 +121,3 @@ class AsrOutputChunk(BaseModel):
 class AsrOutput(BaseModel):
     text: str
     chunks: typing.List[AsrOutputChunk] = []
-
-
-class SeamlessM4TPipeline(BaseModel):
-    upload_urls: typing.List[str] = []
-    model_id: typing.Literal[
-        "facebook/hf-seamless-m4t-large", "facebook/hf-seamless-m4t-medium"
-    ] = "facebook/hf-seamless-m4t-large"
-
-
-class SeamlessM4TInputs(BaseModel):
-    audio: str | None  # required for ASR, S2ST, and S2TT
-    text: str | None  # required for T2ST and T2TT
-    task: typing.Literal["S2ST", "T2ST", "S2TT", "T2TT", "ASR"] = "ASR"
-    src_lang: str | None = None  # required for T2ST and T2TT
-    tgt_lang: str | None = None  # ignored for ASR (only src_lang is used)
-    # seamless uses ISO 639-3 codes for languages
-
-    chunk_length_s: float = 30
-    stride_length_s: typing.Tuple[float, float] = (6, 0)
-    batch_size: int = 16
-
-
-class SeamlessM4TOutput(typing.TypedDict):
-    text: str | None
-    audio: str | None
