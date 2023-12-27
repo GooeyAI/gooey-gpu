@@ -194,7 +194,7 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
             frame_h, frame_w = frame_batch[0].shape[:-1]
             cmd_args = [
                 "ffmpeg",
-                "-thread_queue_size", "1024",
+                # "-thread_queue_size", "1024",
                 "-pixel_format", "bgr24", # to match opencv
                 "-f", "rawvideo", "-vcodec", "rawvideo",
                 "-s", f"{frame_w}x{frame_h}",
