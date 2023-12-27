@@ -283,7 +283,7 @@ deployments:
         thenlper/gte-base
 
   - name: "retro-wav2lip-gan"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:dd53f5a2ede10d1c33e06e4413199016d5c426df8dae724b2986857a0ce9763e"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:2362a4a77a3b1e8073a1933543d554edba61eb725fc411e1d03ed99f20fdb710"
     replicas: 3
     nodeSelector:
       cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
