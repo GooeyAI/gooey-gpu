@@ -4,20 +4,18 @@ apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
   name: keda-trigger-auth-rabbitmq-conn
-  namespace: default
+  namespace: gpu
 spec:
   env:
     - parameter: host
       name: BROKER_URL
-{{- end }}
-
 {{- range .Values.rabbitmqAutoscaling.deployments }}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: "{{ $.Release.Name }}-rabbitmq-{{ .name }}"
-  namespace: default
+  namespace: gpu
 spec:
   scaleTargetRef:
     name: "{{ $.Release.Name }}-{{ .name }}"
@@ -48,4 +46,5 @@ spec:
       authenticationRef:
         name: keda-trigger-auth-rabbitmq-conn
     {{- end }}
+{{- end }}
 {{- end }}

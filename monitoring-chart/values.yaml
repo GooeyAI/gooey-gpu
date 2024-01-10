@@ -1,8 +1,3 @@
-serviceMonitors:
-  - name: "redis-ha-1"
-    namespace: "default"
-    port: "exporter-port"
-
 ## Configuration for the kube-prometheus-stack subchart
 ##
 kube-prometheus-stack:
@@ -28,16 +23,18 @@ rabbitmqExporter:
 ## Configuration for rabbitmq exporter subchart
 ##
 prometheus-rabbitmq-exporter:
-  namespaceOverride: "default"
+  # namespace must be "gpu" because secrets (rabbitmq-password)
+  # can't be shared between namespaces
+  namespaceOverride: "gpu"
 
   prometheus:
     monitor:
       enabled: true
       namespace:
-        - "default"
+        - "gpu"
 
   rabbitmq:
-    url: "http://rabbitmq-1-rabbitmq-svc:15672"
-    user: "rabbit"
-    existingPasswordSecret: "rabbitmq-1-rabbitmq-secret"
-    existingPasswordSecretKey: "rabbitmq-pass"
+    url: "http://rabbitmq.gpu.svc.cluster.local:15672"
+    user: "user"
+    existingPasswordSecret: "rabbitmq"
+    existingPasswordSecretKey: "rabbitmq-password"

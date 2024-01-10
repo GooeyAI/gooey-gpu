@@ -1,0 +1,15 @@
+persistence:
+  enabled: true
+
+master:
+  nodeSelector:
+    agentpool: "userpool2"
+
+replica:
+  nodeSelector:
+    agentpool: "userpool2"
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

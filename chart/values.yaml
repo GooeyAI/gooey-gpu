@@ -8,11 +8,11 @@ autoscaling:
 rabbitmqAutoscaling:
   enabled: true
   deployments:
-    - name: "common-diffusion-instruct-pix2pix"
-      queueName: "gooey-gpu/timbrooks/instruct-pix2pix"
-      queueLength: "2"
-      minReplicaCount: 1
-      maxReplicaCount: 4
+    # - name: "common-diffusion-instruct-pix2pix"
+    #   queueName: "gooey-gpu/timbrooks/instruct-pix2pix"
+    #   queueLength: "2"
+    #   minReplicaCount: 1
+    #   maxReplicaCount: 4
     - name: "deforum-sd-1"
       queueName: "gooey-gpu/Protogen_V2.2.ckpt"
       queueLength: "2"  # tasks per replica
@@ -23,33 +23,33 @@ rabbitmqAutoscaling:
       queueLength: "2"
       minReplicaCount: 0
       maxReplicaCount: 1
-    - name: "common-diffusion-on-demand"
-      minReplicaCount: 0
-      maxReplicaCount: 1
-      queueLength: "2"
-      queueNames:
-        - "gooey-gpu/wavymulder/Analog-Diffusion"
-        - "gooey-gpu/prompthero/openjourney"
-        - "gooey-gpu/prompthero/openjourney-v2"
-        - "gooey-gpu/darkstorm2150/Protogen_v5.3_Official_Release"
-    - name: "common-seamless"
-      minReplicaCount: 0
-      maxReplicaCount: 1
-      queueLength: "2"
-      queueNames:
-        - "gooey-gpu/facebook/hf-seamless-m4t-large"
-        - "gooey-gpu/facebook/hf-seamless-m4t-medium"
-    - name: "common-audio-ldm-bark"
-      minReplicaCount: 0
-      maxReplicaCount: 1
-      queueLength: "2"
-      queueNames:
-        - "gooey-gpu/bark"
-        - "gooey-gpu/cvssp/audioldm"
+    # - name: "common-diffusion-on-demand"
+    #   minReplicaCount: 0
+    #   maxReplicaCount: 1
+    #   queueLength: "2"
+    #   queueNames:
+    #     - "gooey-gpu/wavymulder/Analog-Diffusion"
+    #     - "gooey-gpu/prompthero/openjourney"
+    #     - "gooey-gpu/prompthero/openjourney-v2"
+    #     - "gooey-gpu/darkstorm2150/Protogen_v5.3_Official_Release"
+    # - name: "common-seamless"
+    #   minReplicaCount: 0
+    #   maxReplicaCount: 1
+    #   queueLength: "2"
+    #   queueNames:
+    #     - "gooey-gpu/facebook/hf-seamless-m4t-large"
+    #     - "gooey-gpu/facebook/hf-seamless-m4t-medium"
+    # - name: "common-audio-ldm-bark"
+    #   minReplicaCount: 0
+    #   maxReplicaCount: 1
+    #   queueLength: "2"
+    #   queueNames:
+    #     - "gooey-gpu/bark"
+    #     - "gooey-gpu/cvssp/audioldm"
 
 persistence:
   enabled: true
-  storageClass: "premium-rwo"
+  storageClass: "managed-csi-premium"
   size: 250Gi
 
 storageClass:
@@ -77,10 +77,9 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+      agentpool: "a100"
     limits:
-      memory: "40Gi"
+      memory: "50Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -93,77 +92,75 @@ deployments:
         dreamlike-art/dreamlike-photoreal-2.0
         runwayml/stable-diffusion-v1-5
 
-  - name: "common-diffusion-on-demand" # scales to zero
-    image: *commonImg
-    replicas: 0
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "30Gi"
-      cpu: "1"
-    env:
-      IMPORTS: |-
-        common.diffusion
-        common.controlnet
-      CONTROLNET_MODEL_IDS: *controlnetModelIds
-      SD_MODEL_IDS: |-
-        wavymulder/Analog-Diffusion
-        prompthero/openjourney
-        prompthero/openjourney-v2
-        darkstorm2150/Protogen_v5.3_Official_Release
-
-  - name: "common-diffusion-inpaint"
-    image: *commonImg
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      IMPORTS: |-
-        common.diffusion
-      CONTROLNET_MODEL_IDS: *controlnetModelIds
-      SD_MODEL_IDS: |-
-        stabilityai/stable-diffusion-2-inpainting
-        runwayml/stable-diffusion-inpainting
-
-  - name: "common-diffusion-instruct-pix2pix"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    limits:
-      memory: "12Gi"
-      cpu: "3"
-    env:
-      IMPORTS: |-
-        common.diffusion
-      SD_MODEL_IDS: |-
-        timbrooks/instruct-pix2pix
-  - name: "common-diffusion-upscale"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    limits:
-      memory: "12Gi"
-      cpu: "3"
-    env:
-      IMPORTS: |-
-        common.diffusion
-      SD_MODEL_IDS: |-
-        stabilityai/stable-diffusion-x4-upscaler
-
+#  - name: "common-diffusion-on-demand" # scales to zero
+#    image: *commonImg
+#    replicas: 0
+#    nodeSelector:
+#      agentpool: "a100"
+#    limits:
+#      memory: "30Gi"
+#      cpu: "1"
+#    env:
+#      IMPORTS: |-
+#        common.diffusion
+#        common.controlnet
+#      CONTROLNET_MODEL_IDS: *controlnetModelIds
+#      SD_MODEL_IDS: |-
+#        wavymulder/Analog-Diffusion
+#        prompthero/openjourney
+#        prompthero/openjourney-v2
+#        darkstorm2150/Protogen_v5.3_Official_Release
+#
+#  - name: "common-diffusion-inpaint"
+#    image: *commonImg
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      IMPORTS: |-
+#        common.diffusion
+#      CONTROLNET_MODEL_IDS: *controlnetModelIds
+#      SD_MODEL_IDS: |-
+#        stabilityai/stable-diffusion-2-inpainting
+#        runwayml/stable-diffusion-inpainting
+#
+#  - name: "common-diffusion-instruct-pix2pix"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-l4"
+#    limits:
+#      memory: "12Gi"
+#      cpu: "3"
+#    env:
+#      IMPORTS: |-
+#        common.diffusion
+#      SD_MODEL_IDS: |-
+#        timbrooks/instruct-pix2pix
+#  - name: "common-diffusion-upscale"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-l4"
+#    limits:
+#      memory: "12Gi"
+#      cpu: "3"
+#    env:
+#      IMPORTS: |-
+#        common.diffusion
+#      SD_MODEL_IDS: |-
+#        stabilityai/stable-diffusion-x4-upscaler
+#
   - name: "deforum-sd-1"
     image: *deforumImg
     replicas: 2
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+      agentpool: "a100"
     limits:
-      memory: "15Gi"
+      memory: "19Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -175,10 +172,9 @@ deployments:
     image: *deforumImg
     replicas: 0
     nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+      agentpool: "a100"
     limits:
-      memory: "15Gi"
+      memory: "19Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -186,182 +182,192 @@ deployments:
       MODEL_IDS: |-
         epicdream.safetensors
 
-  - name: "common-whisper-en-short"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        openai/whisper-large-v2
-  - name: "common-whisper-te-short"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        vasista22/whisper-telugu-large-v2
+#  - name: "common-whisper-en-short"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      QUEUE_PREFIX: "gooey-gpu/short"
+#      IMPORTS: |-
+#        common.whisper
+#      WHISPER_MODEL_IDS: |-
+#        openai/whisper-large-v2
+#  - name: "common-whisper-te-short"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      QUEUE_PREFIX: "gooey-gpu/short"
+#      IMPORTS: |-
+#        common.whisper
+#      WHISPER_MODEL_IDS: |-
+#        vasista22/whisper-telugu-large-v2
+#
+#  - name: "common-whisper-en-te-long"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-l4"
+#    limits:
+#      memory: "12Gi"
+#      cpu: "3"
+#    env:
+#      QUEUE_PREFIX: "gooey-gpu/long"
+#      IMPORTS: |-
+#        common.whisper
+#      WHISPER_MODEL_IDS: |-
+#        openai/whisper-large-v2
+#        vasista22/whisper-telugu-large-v2
+#  - name: "common-whisper-hi-bho-long"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-l4"
+#    limits:
+#      memory: "12Gi"
+#      cpu: "3"
+#    env:
+#      QUEUE_PREFIX: "gooey-gpu/long"
+#      IMPORTS: |-
+#        common.whisper
+#      WHISPER_MODEL_IDS: |-
+#        vasista22/whisper-hindi-large-v2
+#        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+#  - name: "common-whisper-hi-bho-short"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-l4"
+#    limits:
+#      memory: "12Gi"
+#      cpu: "3"
+#    env:
+#      QUEUE_PREFIX: "gooey-gpu/short"
+#      IMPORTS: |-
+#        common.whisper
+#      WHISPER_MODEL_IDS: |-
+#        vasista22/whisper-hindi-large-v2
+#        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+#
+#  - name: "common-embeddings-1"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
+#    limits:
+#      memory: "10Gi"
+#      cpu: "15"
+#    env:
+#      IMPORTS: |-
+#        common.embeddings
+#      EMBEDDING_MODEL_IDS: |-
+#        intfloat/e5-large-v2
+#        intfloat/e5-base-v2
+#        intfloat/multilingual-e5-base
+#        intfloat/multilingual-e5-large
+#        thenlper/gte-large
+#        thenlper/gte-base
+#
+#  - name: "retro-wav2lip-gan"
+#    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:2362a4a77a3b1e8073a1933543d554edba61eb725fc411e1d03ed99f20fdb710"
+#    replicas: 3
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
+#    limits:
+#      memory: "10Gi"
+#      cpu: "15"
+#    env:
+#      IMPORTS: |-
+#        retro.wav2lip
+#      WAV2LIP_MODEL_IDS: |-
+#        wav2lip_gan.pth
+#
+#  - name: "retro-u2net-dis"
+#    image: *retroImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
+#    limits:
+#      memory: "10Gi"
+#      cpu: "15"
+#    env:
+#      IMPORTS: |-
+#          retro.u2net
+#          retro.dis
+#      U2NET_MODEL_IDS: |-
+#          u2net
+#      DIS_MODEL_IDS: |-
+#          isnet-general-use.pth
+#
+#  - name: "retro-nemo-asr"
+#    image: *retroImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      IMPORTS: |-
+#          retro.nvidia_nemo
+#      NEMO_ASR_MODEL_IDS: |-
+#          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
+#          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
+#
+#  - name: "common-audio-ldm-bark"
+#    image: *commonImg
+#    replicas: 1
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      IMPORTS: |-
+#        common.audio_ldm
+#        common.suno_ai_bark
+#      AUDIO_LDM_MODEL_IDS: |-
+#        cvssp/audioldm
+#      # BARK_MODEL_IDS env var is unused in code but here to
+#      # note that bark queue is loaded by suno_ai_bark module
+#      BARK_MODEL_IDS: |-
+#        bark
+#
+#  - name: "common-seamless"
+#    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
+#    replicas: 0
+#    nodeSelector:
+#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
+#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
+#    limits:
+#      memory: "15Gi"
+#      cpu: "1"
+#    env:
+#      IMPORTS: |-
+#        common.seamless_asr
+#      SEAMLESS_MODEL_IDS: |-
+#        facebook/hf-seamless-m4t-large
+#        facebook/hf-seamless-m4t-medium
+#
 
-  - name: "common-whisper-en-te-long"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    limits:
-      memory: "12Gi"
-      cpu: "3"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/long"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        openai/whisper-large-v2
-        vasista22/whisper-telugu-large-v2
-  - name: "common-whisper-hi-bho-long"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    limits:
-      memory: "12Gi"
-      cpu: "3"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/long"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        vasista22/whisper-hindi-large-v2
-        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
-  - name: "common-whisper-hi-bho-short"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-l4"
-    limits:
-      memory: "12Gi"
-      cpu: "3"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        vasista22/whisper-hindi-large-v2
-        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+## Dependencies
+nfs-server-provisioner:
+  persistence:
+    enabled: true
+    storageClass: "managed-csi-premium"
+    size: 250Gi
 
-  - name: "common-embeddings-1"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
-    limits:
-      memory: "10Gi"
-      cpu: "15"
-    env:
-      IMPORTS: |-
-        common.embeddings
-      EMBEDDING_MODEL_IDS: |-
-        intfloat/e5-large-v2
-        intfloat/e5-base-v2
-        intfloat/multilingual-e5-base
-        intfloat/multilingual-e5-large
-        thenlper/gte-large
-        thenlper/gte-base
-
-  - name: "retro-wav2lip-gan"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:2362a4a77a3b1e8073a1933543d554edba61eb725fc411e1d03ed99f20fdb710"
-    replicas: 3
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
-    limits:
-      memory: "10Gi"
-      cpu: "15"
-    env:
-      IMPORTS: |-
-        retro.wav2lip
-      WAV2LIP_MODEL_IDS: |-
-        wav2lip_gan.pth
-
-  - name: "retro-u2net-dis"
-    image: *retroImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
-    limits:
-      memory: "10Gi"
-      cpu: "15"
-    env:
-      IMPORTS: |-
-          retro.u2net
-          retro.dis
-      U2NET_MODEL_IDS: |-
-          u2net
-      DIS_MODEL_IDS: |-
-          isnet-general-use.pth
-
-  - name: "retro-nemo-asr"
-    image: *retroImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      IMPORTS: |-
-          retro.nvidia_nemo
-      NEMO_ASR_MODEL_IDS: |-
-          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
-          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
-
-  - name: "common-audio-ldm-bark"
-    image: *commonImg
-    replicas: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      IMPORTS: |-
-        common.audio_ldm
-        common.suno_ai_bark
-      AUDIO_LDM_MODEL_IDS: |-
-        cvssp/audioldm
-      # BARK_MODEL_IDS env var is unused in code but here to
-      # note that bark queue is loaded by suno_ai_bark module
-      BARK_MODEL_IDS: |-
-        bark
-
-  - name: "common-seamless"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
-    replicas: 0
-    nodeSelector:
-      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-    limits:
-      memory: "15Gi"
-      cpu: "1"
-    env:
-      IMPORTS: |-
-        common.seamless_asr
-      SEAMLESS_MODEL_IDS: |-
-        facebook/hf-seamless-m4t-large
-        facebook/hf-seamless-m4t-medium
-
+  storageClass:
+    defaultClass: true

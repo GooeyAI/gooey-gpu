@@ -1,0 +1,6 @@
+  nodeSelector:
+    agentpool: "userpool"
+
+  metrics:
+    enabled: true
+    port: 9090

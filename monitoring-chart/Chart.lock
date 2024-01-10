@@ -1,9 +1,9 @@
 dependencies:
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 51.8.0
-- name: prometheus-redis-exporter
-  repository: https://prometheus-community.github.io/helm-charts
-  version: 6.0.0
-digest: sha256:65e9cf94195b135d409b3d6a9d1bebfac4d2b8246af68e6fa6947926d90bc556
-generated: "2023-10-16T16:04:31.865094+05:30"
+  version: 51.8.1
+- name: prometheus-rabbitmq-exporter
+  repository: ""
+  version: 1.9.*
+digest: sha256:295e624553809e85aa2754de661a76bb4cf7e4e79b50501205cadbba53971b7e
+generated: "2024-01-10T19:42:00.019198+05:30"
