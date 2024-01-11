@@ -23,29 +23,29 @@ rabbitmqAutoscaling:
       queueLength: "2"
       minReplicaCount: 0
       maxReplicaCount: 1
-    # - name: "common-diffusion-on-demand"
-    #   minReplicaCount: 0
-    #   maxReplicaCount: 1
-    #   queueLength: "2"
-    #   queueNames:
-    #     - "gooey-gpu/wavymulder/Analog-Diffusion"
-    #     - "gooey-gpu/prompthero/openjourney"
-    #     - "gooey-gpu/prompthero/openjourney-v2"
-    #     - "gooey-gpu/darkstorm2150/Protogen_v5.3_Official_Release"
-    # - name: "common-seamless"
-    #   minReplicaCount: 0
-    #   maxReplicaCount: 1
-    #   queueLength: "2"
-    #   queueNames:
-    #     - "gooey-gpu/facebook/hf-seamless-m4t-large"
-    #     - "gooey-gpu/facebook/hf-seamless-m4t-medium"
-    # - name: "common-audio-ldm-bark"
-    #   minReplicaCount: 0
-    #   maxReplicaCount: 1
-    #   queueLength: "2"
-    #   queueNames:
-    #     - "gooey-gpu/bark"
-    #     - "gooey-gpu/cvssp/audioldm"
+    - name: "common-diffusion-on-demand"
+      minReplicaCount: 0
+      maxReplicaCount: 1
+      queueLength: "2"
+      queueNames:
+        - "gooey-gpu/wavymulder/Analog-Diffusion"
+        - "gooey-gpu/prompthero/openjourney"
+        - "gooey-gpu/prompthero/openjourney-v2"
+        - "gooey-gpu/darkstorm2150/Protogen_v5.3_Official_Release"
+    - name: "common-seamless"
+      minReplicaCount: 0
+      maxReplicaCount: 1
+      queueLength: "2"
+      queueNames:
+        - "gooey-gpu/facebook/hf-seamless-m4t-large"
+        - "gooey-gpu/facebook/hf-seamless-m4t-medium"
+    - name: "common-audio-ldm-bark"
+      minReplicaCount: 0
+      maxReplicaCount: 1
+      queueLength: "2"
+      queueNames:
+        - "gooey-gpu/bark"
+        - "gooey-gpu/cvssp/audioldm"
 
 persistence:
   enabled: true
@@ -92,41 +92,40 @@ deployments:
         dreamlike-art/dreamlike-photoreal-2.0
         runwayml/stable-diffusion-v1-5
 
-#  - name: "common-diffusion-on-demand" # scales to zero
-#    image: *commonImg
-#    replicas: 0
-#    nodeSelector:
-#      agentpool: "a100"
-#    limits:
-#      memory: "30Gi"
-#      cpu: "1"
-#    env:
-#      IMPORTS: |-
-#        common.diffusion
-#        common.controlnet
-#      CONTROLNET_MODEL_IDS: *controlnetModelIds
-#      SD_MODEL_IDS: |-
-#        wavymulder/Analog-Diffusion
-#        prompthero/openjourney
-#        prompthero/openjourney-v2
-#        darkstorm2150/Protogen_v5.3_Official_Release
-#
-#  - name: "common-diffusion-inpaint"
-#    image: *commonImg
-#    nodeSelector:
-#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-#    limits:
-#      memory: "15Gi"
-#      cpu: "1"
-#    env:
-#      IMPORTS: |-
-#        common.diffusion
-#      CONTROLNET_MODEL_IDS: *controlnetModelIds
-#      SD_MODEL_IDS: |-
-#        stabilityai/stable-diffusion-2-inpainting
-#        runwayml/stable-diffusion-inpainting
-#
+  - name: "common-diffusion-on-demand" # scales to zero
+    image: *commonImg
+    replicas: 0
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "37Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
+        wavymulder/Analog-Diffusion
+        prompthero/openjourney
+        prompthero/openjourney-v2
+        darkstorm2150/Protogen_v5.3_Official_Release
+
+  - name: "common-diffusion-inpaint"
+    image: *commonImg
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
+        stabilityai/stable-diffusion-2-inpainting
+        runwayml/stable-diffusion-inpainting
+
 #  - name: "common-diffusion-instruct-pix2pix"
 #    image: *commonImg
 #    replicas: 1
@@ -309,58 +308,55 @@ deployments:
 #      DIS_MODEL_IDS: |-
 #          isnet-general-use.pth
 #
-#  - name: "retro-nemo-asr"
-#    image: *retroImg
-#    replicas: 1
-#    nodeSelector:
-#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-#    limits:
-#      memory: "15Gi"
-#      cpu: "1"
-#    env:
-#      IMPORTS: |-
-#          retro.nvidia_nemo
-#      NEMO_ASR_MODEL_IDS: |-
-#          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
-#          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
-#
-#  - name: "common-audio-ldm-bark"
-#    image: *commonImg
-#    replicas: 1
-#    nodeSelector:
-#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-#    limits:
-#      memory: "15Gi"
-#      cpu: "1"
-#    env:
-#      IMPORTS: |-
-#        common.audio_ldm
-#        common.suno_ai_bark
-#      AUDIO_LDM_MODEL_IDS: |-
-#        cvssp/audioldm
-#      # BARK_MODEL_IDS env var is unused in code but here to
-#      # note that bark queue is loaded by suno_ai_bark module
-#      BARK_MODEL_IDS: |-
-#        bark
-#
-#  - name: "common-seamless"
-#    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
-#    replicas: 0
-#    nodeSelector:
-#      cloud.google.com/gke-accelerator: "nvidia-tesla-a100"
-#      cloud.google.com/gke-max-shared-clients-per-gpu: "5"
-#    limits:
-#      memory: "15Gi"
-#      cpu: "1"
-#    env:
-#      IMPORTS: |-
-#        common.seamless_asr
-#      SEAMLESS_MODEL_IDS: |-
-#        facebook/hf-seamless-m4t-large
-#        facebook/hf-seamless-m4t-medium
-#
+  - name: "retro-nemo-asr"
+    image: *retroImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+          retro.nvidia_nemo
+      NEMO_ASR_MODEL_IDS: |-
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
+
+  - name: "common-audio-ldm-bark"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.audio_ldm
+        common.suno_ai_bark
+      AUDIO_LDM_MODEL_IDS: |-
+        cvssp/audioldm
+      # BARK_MODEL_IDS env var is unused in code but here to
+      # note that bark queue is loaded by suno_ai_bark module
+      BARK_MODEL_IDS: |-
+        bark
+
+  - name: "common-seamless"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
+    replicas: 0
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.seamless_asr
+      SEAMLESS_MODEL_IDS: |-
+        facebook/hf-seamless-m4t-large
+        facebook/hf-seamless-m4t-medium
+
 
 ## Dependencies
 nfs-server-provisioner:
