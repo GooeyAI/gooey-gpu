@@ -4,7 +4,7 @@ apiVersion: "apps/v1"
 kind: "Deployment"
 metadata:
   name: "{{ $.Release.Name }}-{{ .name }}"
-  namespace: "default"
+  namespace: "{{ $.Values.namespace }}"
   labels:
     app: "{{ $.Release.Name }}-{{ .name }}"
 spec:
@@ -24,9 +24,10 @@ spec:
       - name: "worker"
         image: "{{ .image }}"
         resources:
+          {{- if .limits }}
           limits:
-            nvidia.com/gpu: "1"
-            {{- if .limits }}{{- toYaml .limits | nindent 12 }}{{- end }}
+            {{- toYaml .limits | nindent 12 }}
+          {{- end }}
         env:
           {{- if .env }}
           {{- range $name, $value := .env }}

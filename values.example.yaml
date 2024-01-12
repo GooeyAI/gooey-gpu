@@ -3,3 +3,5 @@ commonEnv:
   RESULT_BACKEND: "redis://:password@host"
   SENTRY_DSN: "XXXX"
   HUGGING_FACE_HUB_TOKEN: "hf_XXXX"
+
+namespace: "default"
