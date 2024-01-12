@@ -4,7 +4,7 @@ apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
   name: keda-trigger-auth-rabbitmq-conn
-  namespace: default
+  namespace: "{{ $.Values.namespace }}"
 spec:
   env:
     - parameter: host
@@ -17,7 +17,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: "{{ $.Release.Name }}-rabbitmq-{{ .name }}"
-  namespace: default
+  namespace: "{{ $.Values.namespace }}"
 spec:
   scaleTargetRef:
     name: "{{ $.Release.Name }}-{{ .name }}"
