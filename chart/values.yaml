@@ -332,3 +332,16 @@ deployments:
         facebook/hf-seamless-m4t-large
         facebook/hf-seamless-m4t-medium
 
+nfs-server-provisioner:
+  # already deployed with nfs-server chart name in GCP
+  #
+  enabled: false
+
+  persistence:
+    enabled: true
+    storageClass: "premium-rwo"
+    size: 250Gi
+
+  storageClass:
+    defaultClass: true
+
