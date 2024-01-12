@@ -1,0 +1,227 @@
+namespace: "gpu"
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+rabbitmqAutoscaling:
+  enabled: true
+  deployments:
+    - name: "deforum-sd-1"
+      queueName: "gooey-gpu/Protogen_V2.2.ckpt"
+      queueLength: "2"  # tasks per replica
+      minReplicaCount: 2
+      maxReplicaCount: 12
+
+persistence:
+  enabled: true
+  storageClass: "managed-csi-premium"
+  size: 250Gi
+
+storageClass:
+  defaultClass: true
+
+commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:43ce3db1869b8eb151989270a7dfe4f9a68ee887fa5d86ca0d238e185b4e96c1"
+retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:16b0cd846bff171b2a087f6409658c08748bbdf7e308474820c7a6e96eef8695"
+deforumImg: &deforumImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/deforum_sd@sha256:fefdf0b01f6894aa6943c5afe7022b44e109f64c241512ca268b7d173d985a01"
+
+controlnetModelIds: &controlnetModelIds |-
+    lllyasviel/sd-controlnet-canny
+    lllyasviel/sd-controlnet-depth
+    lllyasviel/sd-controlnet-hed
+    lllyasviel/sd-controlnet-mlsd
+    lllyasviel/sd-controlnet-normal
+    lllyasviel/sd-controlnet-openpose
+    lllyasviel/sd-controlnet-scribble
+    lllyasviel/sd-controlnet-seg
+    lllyasviel/control_v11f1e_sd15_tile
+    ioclab/control_v1p_sd15_brightness
+    monster-labs/control_v1p_sd15_qrcode_monster/v2
+
+## not deployed here:
+#
+# common-diffusion-instruct-pix2pix
+# common-diffusion-upscale
+# common-whisper-en-te-long
+# common-whisper-hi-bho-long
+# common-whisper-hi-bho-short
+# common-embeddings-1
+# retro-wav2lip-gan
+# retro-u2net-dis
+
+deployments:
+  - name: "common-diffusion-new"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "50Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
+        Lykon/DreamShaper
+        stabilityai/stable-diffusion-2-1
+        dreamlike-art/dreamlike-photoreal-2.0
+        runwayml/stable-diffusion-v1-5
+
+  - name: "common-diffusion-on-demand" # scales to zero
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "37Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
+        wavymulder/Analog-Diffusion
+        prompthero/openjourney
+        prompthero/openjourney-v2
+        darkstorm2150/Protogen_v5.3_Official_Release
+
+  - name: "common-diffusion-inpaint"
+    image: *commonImg
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
+        stabilityai/stable-diffusion-2-inpainting
+        runwayml/stable-diffusion-inpainting
+
+  - name: "deforum-sd-1"
+    image: *deforumImg
+    replicas: 2
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        deforum_sd
+      MODEL_IDS: |-
+        Protogen_V2.2.ckpt
+
+  - name: "deforum-sd-epicdream"
+    image: *deforumImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        deforum_sd
+      MODEL_IDS: |-
+        epicdream.safetensors
+
+  - name: "common-whisper-en-short"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        openai/whisper-large-v2
+
+  - name: "common-whisper-te-short"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-telugu-large-v2
+
+  - name: "retro-nemo-asr"
+    image: *retroImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+          retro.nvidia_nemo
+      NEMO_ASR_MODEL_IDS: |-
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
+
+  - name: "common-audio-ldm-bark"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.audio_ldm
+        common.suno_ai_bark
+      AUDIO_LDM_MODEL_IDS: |-
+        cvssp/audioldm
+      # BARK_MODEL_IDS env var is unused in code but here to
+      # note that bark queue is loaded by suno_ai_bark module
+      BARK_MODEL_IDS: |-
+        bark
+
+  - name: "common-seamless"
+    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "19Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.seamless_asr
+      SEAMLESS_MODEL_IDS: |-
+        facebook/hf-seamless-m4t-large
+        facebook/hf-seamless-m4t-medium
+
+
+## Dependencies
+nfs-server-provisioner:
+  enabled: true
+
+  persistence:
+    enabled: true
+    storageClass: "managed-csi-premium"
+    size: 250Gi
+
+  storageClass:
+    defaultClass: true
