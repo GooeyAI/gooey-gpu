@@ -162,7 +162,7 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
     lip_size = 96
 
     face_mime_type = mimetypes.guess_type(inputs.face)[0] or ""
-    is_static = "image/" in face_mime_type
+    is_static = "image/" in face_mime_type and "image/gif" not in face_mime_type
 
     if not os.path.isfile(inputs.face):
         raise ValueError("--face argument must be a valid path to video/image file")
@@ -170,7 +170,9 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
     if is_static:
         input_stream = None
         fps = inputs.fps
-        frame = cv2.cvtColor(np.array(PIL.Image.open(inputs.face)), cv2.COLOR_RGB2BGR)
+        frame = cv2.cvtColor(
+            np.array(PIL.Image.open(inputs.face).convert("RGB")), cv2.COLOR_RGB2BGR
+        )
         frame = resize_frame(frame, inputs.out_height)
     else:
         input_stream = cv2.VideoCapture(inputs.face)
@@ -178,11 +180,12 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
         frame = None
 
     ffproc = None
+    prev_faces = None
 
     mel_chunks = get_mel_chunks(inputs.audio, fps)
     for idx in tqdm(range(0, len(mel_chunks), inputs.batch_size)):
         if is_static:
-            frame_batch = [frame] * inputs.batch_size
+            frame_batch = [frame.copy()] * inputs.batch_size
         else:
             frame_batch = list(
                 read_n_frames(
@@ -194,16 +197,17 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
             frame_h, frame_w = frame_batch[0].shape[:-1]
             cmd_args = [
                 "ffmpeg",
-                # "-thread_queue_size", "1024",
+                # "-thread_queue_size", "128",
                 "-pixel_format", "bgr24", # to match opencv
-                "-f", "rawvideo", "-vcodec", "rawvideo",
+                "-f", "rawvideo",
+                # "-vcodec", "rawvideo",
                 "-s", f"{frame_w}x{frame_h}",
                 "-r", str(fps),
                 "-i", "pipe:0", # stdin
                 "-i", inputs.audio,
-                "-vcodec", "libx264",
+                # "-vcodec", "libx264",
                 "-pix_fmt", "yuv420p", # because iphone, see https://trac.ffmpeg.org/wiki/Encode/H.264#Encodingfordumbplayers
-                "-preset", "ultrafast",
+                # "-preset", "ultrafast",
                 outfile,
             ]  # fmt:skip
             print("\t$ " + " ".join(cmd_args))
@@ -212,7 +216,9 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
         mel_batch = mel_chunks[idx : idx + inputs.batch_size]
         frame_batch = frame_batch[: len(mel_batch)]
 
-        coords_batch = face_detect(detector, frame_batch, inputs.pads)
+        coords_batch, prev_faces = face_detect(
+            detector, frame_batch, inputs.pads, prev_faces
+        )
         img_batch = [
             cv2.resize(image[y1:y2, x1:x2], (lip_size, lip_size))
             for image, (x1, y1, x2, y2) in zip(frame_batch, coords_batch)
@@ -245,6 +251,7 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
             p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
 
             f[y1:y2, x1:x2] = p
+            cv2.imwrite(f"{outfile}_{idx}.png", f)
             ffproc.stdin.write(f.tostring())
 
     if input_stream:
@@ -306,15 +313,19 @@ def get_mel_chunks(audio_path: str, fps: float) -> typing.List[np.ndarray]:
     return mel_chunks
 
 
-def face_detect(detector, images, pads: typing.List[int]) -> np.ndarray:
+def face_detect(
+    detector, images, pads: typing.List[int], prev_faces: list
+) -> typing.Tuple[np.ndarray, list]:
     results = []
     pady1, pady2, padx1, padx2 = pads
 
     for image, faces in zip(images, detector(images)):
-        if not faces:
+        if not (faces or prev_faces):
             raise FaceNotFoundException(
                 "Face not detected! Ensure the video contains a face in all the frames."
             )
+        faces = faces or prev_faces
+        prev_faces = faces
 
         box, landmarks, score = faces[0]
         rect = tuple(map(int, box))
@@ -328,7 +339,7 @@ def face_detect(detector, images, pads: typing.List[int]) -> np.ndarray:
 
     boxes = np.array(results)
 
-    return boxes
+    return boxes, prev_faces
 
 
 class FaceNotFoundException(ValueError):
