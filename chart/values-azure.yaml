@@ -15,6 +15,15 @@ rabbitmqAutoscaling:
       queueLength: "2"  # tasks per replica
       minReplicaCount: 2
       maxReplicaCount: 12
+    - name: "common-diffusion-new"
+      queueNames:
+        - "gooey-gpu/Lykon/DreamShaper"
+        - "gooey-gpu/stabilityai/stable-diffusion-2-1"
+        - "gooey-gpu/dreamlike-art/dreamlike-photoreal-2.0"
+        - "gooey-gpu/runwayml/stable-diffusion-v1-5"
+      queueLength: "20"
+      minReplicaCount: 1
+      maxReplicaCount: 3
 
 persistence:
   enabled: true
