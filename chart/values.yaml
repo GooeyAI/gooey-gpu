@@ -15,7 +15,7 @@ rabbitmqAutoscaling:
       maxReplicaCount: 4
 
 commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:43ce3db1869b8eb151989270a7dfe4f9a68ee887fa5d86ca0d238e185b4e96c1"
-retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:21628918b942b4c473f2ba8c110650811c3abeb88caf0d07cd49006f9fc3d736"
+retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:85053077c29f4a3f4edc724924f4bebf736402872810ee3d6d430272430b6032"
 
 ## not deployed here
 #
