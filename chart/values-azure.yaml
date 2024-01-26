@@ -24,6 +24,11 @@ rabbitmqAutoscaling:
       queueLength: "20"
       minReplicaCount: 1
       maxReplicaCount: 3
+    - name: "deforum-sd-epicdream"
+      queueName: "gooey-gpu/epicdream.safetensors"
+      queueLength: "2"
+      minReplicaCount: 1
+      maxReplicaCount: 3
 
 persistence:
   enabled: true
