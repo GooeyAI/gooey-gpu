@@ -13,6 +13,11 @@ rabbitmqAutoscaling:
       queueLength: "2"
       minReplicaCount: 1
       maxReplicaCount: 4
+    - name: "retro-wav2lip-gan"
+      queueName: "gooey-gpu/retro/wav2lip_gan.pth"
+      queueLength: "2"
+      minReplicaCount: 3
+      maxReplicaCount: 12
 
 commonImg: &commonImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:43ce3db1869b8eb151989270a7dfe4f9a68ee887fa5d86ca0d238e185b4e96c1"
 retroImg: &retroImg "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/retro@sha256:85053077c29f4a3f4edc724924f4bebf736402872810ee3d6d430272430b6032"
