@@ -14,7 +14,7 @@ rabbitmqAutoscaling:
       minReplicaCount: 1
       maxReplicaCount: 4
     - name: "retro-wav2lip-gan"
-      queueName: "gooey-gpu/retro/wav2lip_gan.pth"
+      queueName: "gooey-gpu/wav2lip_gan.pth"
       queueLength: "2"
       minReplicaCount: 3
       maxReplicaCount: 12
