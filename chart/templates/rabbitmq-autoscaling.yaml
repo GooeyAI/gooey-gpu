@@ -11,7 +11,9 @@ spec:
       name: BROKER_URL
 {{- end }}
 
-{{- range .Values.rabbitmqAutoscaling.deployments }}
+{{- if .Values.rabbitmqAutoscaling.enabled }}
+{{- range $deployment := .Values.deployments }}
+{{- $overrides := get $.Values.rabbitmqAutoscaling.overrides .name | default (dict) }}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
@@ -21,31 +23,38 @@ metadata:
 spec:
   scaleTargetRef:
     name: "{{ $.Release.Name }}-{{ .name }}"
-  minReplicaCount: {{ .minReplicaCount }}
-  maxReplicaCount: {{ .maxReplicaCount }}
-  pollingInterval: {{ .pollingInterval | default 3 }}
-  cooldownPeriod: {{ .cooldownPeriod | default 1200 }}
+  {{- $minReplicaCount := $overrides.minReplicaCount | default $deployment.replicas }}
+  minReplicaCount: {{ $minReplicaCount }}
+  maxReplicaCount: {{ $overrides.maxReplicaCount | default (add $minReplicaCount 3) }}
+  pollingInterval: 3
+  cooldownPeriod: 1200
   triggers:
-    {{- if .queueNames }}
-    {{- $queueLength := .queueLength }}
-    {{- range .queueNames }}
+    {{- if $overrides.queueNames }}
+    {{- range $queueName := $overrides.queueNames }}
     - type: rabbitmq
       metadata:
         protocol: amqp
-        queueName: "{{ .}}"
+        queueName: "{{ $queueName }}"
         mode: QueueLength
-        value: "{{ $queueLength }}"
+        value: "{{ $overrides.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
       authenticationRef:
         name: keda-trigger-auth-rabbitmq-conn
     {{- end }}
     {{- else }}
+    {{- $queuePrefix := get $deployment.env "QUEUE_PREFIX" | default "gooey-gpu" }}
+    {{- range $queueNameVar := $.Values.rabbitmqAutoscaling.queueNameVars }}
+    {{- range $queue := regexSplit "\n" (get $deployment.env $queueNameVar | default "") -1 | compact }}
+    {{- $queueName := printf "%s/%s" $queuePrefix $queue }}
     - type: rabbitmq
       metadata:
         protocol: amqp
-        queueName: "{{ .queueName }}"
+        queueName: "{{ $queueName }}"
         mode: QueueLength
-        value: "{{ .queueLength }}"
+        value: "{{ $overrides.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
       authenticationRef:
         name: keda-trigger-auth-rabbitmq-conn
     {{- end }}
+    {{- end }}
+    {{- end }}
+{{- end }}
 {{- end }}

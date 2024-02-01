@@ -7,14 +7,29 @@ autoscaling:
 
 rabbitmqAutoscaling:
   enabled: true
-  deployments:
-    - name: "common-diffusion-instruct-pix2pix"
-      queueName: "gooey-gpu/timbrooks/instruct-pix2pix"
+  queueNameVars:
+    - MODEL_IDS
+    - SD_MODEL_IDS
+    - WHISPER_MODEL_IDS
+    - EMBEDDING_MODEL_IDS
+    - WAV2LIP_MODEL_IDS
+    - U2NET_MODEL_IDS
+    - DIS_MODEL_IDS
+    - NEMO_ASR_MODEL_IDS
+    - AUDIO_LDM_MODEL_IDS
+    - BARK_MODEL_IDS
+    - SEAMLESS_MODEL_IDS
+  defaultQueueLength: "2"
+  overrides:
+    "common-diffusion-instruct-pix2pix":
+      queueNames:
+        - "gooey-gpu/timbrooks/instruct-pix2pix"
       queueLength: "2"
       minReplicaCount: 1
       maxReplicaCount: 4
-    - name: "retro-wav2lip-gan"
-      queueName: "gooey-gpu/wav2lip_gan.pth"
+    "retro-wav2lip-gan":
+      queueNames:
+        - "gooey-gpu/wav2lip_gan.pth"
       queueLength: "2"
       minReplicaCount: 3
       maxReplicaCount: 12
