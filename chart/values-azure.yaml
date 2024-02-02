@@ -21,29 +21,24 @@ rabbitmqAutoscaling:
     - AUDIO_LDM_MODEL_IDS
     - BARK_MODEL_IDS
     - SEAMLESS_MODEL_IDS
-  defaultQueueLength: "2"
+  defaultQueueLength: "3"
   overrides:
     "deforum-sd-1":
-      queueNames:
-        - "gooey-gpu/Protogen_V2.2.ckpt"
       queueLength: "2"  # tasks per replica
       minReplicaCount: 2
       maxReplicaCount: 12
     "common-diffusion-new":
-      queueNames:
-        - "gooey-gpu/Lykon/DreamShaper"
-        - "gooey-gpu/stabilityai/stable-diffusion-2-1"
-        - "gooey-gpu/dreamlike-art/dreamlike-photoreal-2.0"
-        - "gooey-gpu/runwayml/stable-diffusion-v1-5"
       queueLength: "20"
       minReplicaCount: 1
       maxReplicaCount: 3
     "deforum-sd-epicdream":
-      queueNames:
-        - "gooey-gpu/epicdream.safetensors"
       queueLength: "2"
       minReplicaCount: 1
       maxReplicaCount: 3
+    "common-embeddings-1":
+      queueLength: "20"
+    "retro-u2net-dis":
+      queueLength: "20"
 
 persistence:
   enabled: true
@@ -70,17 +65,6 @@ controlnetModelIds: &controlnetModelIds |-
     ioclab/control_v1p_sd15_brightness
     monster-labs/control_v1p_sd15_qrcode_monster/v2
 
-## not deployed here:
-#
-# common-diffusion-instruct-pix2pix
-# common-diffusion-upscale
-# common-whisper-en-te-long
-# common-whisper-hi-bho-long
-# common-whisper-hi-bho-short
-# common-embeddings-1
-# retro-wav2lip-gan
-# retro-u2net-dis
-
 deployments:
   - name: "common-diffusion-new"
     image: *commonImg
@@ -101,7 +85,7 @@ deployments:
         dreamlike-art/dreamlike-photoreal-2.0
         runwayml/stable-diffusion-v1-5
 
-  - name: "common-diffusion-on-demand" # scales to zero
+  - name: "common-diffusion-on-demand"
     image: *commonImg
     replicas: 1
     nodeSelector:
@@ -243,6 +227,131 @@ deployments:
         facebook/hf-seamless-m4t-large
         facebook/hf-seamless-m4t-medium
 
+  - name: "common-diffusion-instruct-pix2pix"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "11Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+      SD_MODEL_IDS: |-
+        timbrooks/instruct-pix2pix
+
+  - name: "common-diffusion-upscale"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "52Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+      SD_MODEL_IDS: |-
+        stabilityai/stable-diffusion-x4-upscaler
+
+  - name: "common-whisper-en-te-long"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "40Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        openai/whisper-large-v2
+        vasista22/whisper-telugu-large-v2
+
+  - name: "common-whisper-hi-bho-long"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "40Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+
+  - name: "common-whisper-hi-bho-short"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "10Gi"
+      cpu: "1"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+
+  - name: "common-embeddings-1"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "18Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.embeddings
+      EMBEDDING_MODEL_IDS: |-
+        intfloat/e5-large-v2
+        intfloat/e5-base-v2
+        intfloat/multilingual-e5-base
+        intfloat/multilingual-e5-large
+        thenlper/gte-large
+        thenlper/gte-base
+
+  - name: "retro-wav2lip-gan"
+    image: *retroImg
+    replicas: 3
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "37Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        retro.wav2lip
+      WAV2LIP_MODEL_IDS: |-
+        wav2lip_gan.pth
+
+  - name: "retro-u2net-dis"
+    image: *retroImg
+    replicas: 1
+    nodeSelector:
+      agentpool: "a100"
+    limits:
+      memory: "9Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+          retro.u2net
+          retro.dis
+      U2NET_MODEL_IDS: |-
+          u2net
+      DIS_MODEL_IDS: |-
+          isnet-general-use.pth
 
 ## Dependencies
 nfs-server-provisioner:
