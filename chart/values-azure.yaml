@@ -9,13 +9,27 @@ autoscaling:
 
 rabbitmqAutoscaling:
   enabled: true
-  deployments:
-    - name: "deforum-sd-1"
-      queueName: "gooey-gpu/Protogen_V2.2.ckpt"
+  queueNameVars:
+    - MODEL_IDS
+    - SD_MODEL_IDS
+    - WHISPER_MODEL_IDS
+    - EMBEDDING_MODEL_IDS
+    - WAV2LIP_MODEL_IDS
+    - U2NET_MODEL_IDS
+    - DIS_MODEL_IDS
+    - NEMO_ASR_MODEL_IDS
+    - AUDIO_LDM_MODEL_IDS
+    - BARK_MODEL_IDS
+    - SEAMLESS_MODEL_IDS
+  defaultQueueLength: "2"
+  overrides:
+    "deforum-sd-1":
+      queueNames:
+        - "gooey-gpu/Protogen_V2.2.ckpt"
       queueLength: "2"  # tasks per replica
       minReplicaCount: 2
       maxReplicaCount: 12
-    - name: "common-diffusion-new"
+    "common-diffusion-new":
       queueNames:
         - "gooey-gpu/Lykon/DreamShaper"
         - "gooey-gpu/stabilityai/stable-diffusion-2-1"
@@ -24,8 +38,9 @@ rabbitmqAutoscaling:
       queueLength: "20"
       minReplicaCount: 1
       maxReplicaCount: 3
-    - name: "deforum-sd-epicdream"
-      queueName: "gooey-gpu/epicdream.safetensors"
+    "deforum-sd-epicdream":
+      queueNames:
+        - "gooey-gpu/epicdream.safetensors"
       queueLength: "2"
       minReplicaCount: 1
       maxReplicaCount: 3
@@ -107,6 +122,7 @@ deployments:
 
   - name: "common-diffusion-inpaint"
     image: *commonImg
+    replicas: 1
     nodeSelector:
       agentpool: "a100"
     limits:
