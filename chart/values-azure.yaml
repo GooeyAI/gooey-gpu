@@ -447,6 +447,9 @@ deployments:
 nfs-server-provisioner:
   enabled: true
 
+  nodeSelector:
+    gpuEnabled: "false"
+
   persistence:
     enabled: true
     storageClass: "managed-csi-premium"
