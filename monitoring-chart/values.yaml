@@ -1,8 +1,3 @@
-serviceMonitors:
-  - name: "redis-ha-1"
-    namespace: "default"
-    port: "exporter-port"
-
 ## Configuration for the kube-prometheus-stack subchart
 ##
 kube-prometheus-stack:
@@ -10,8 +5,20 @@ kube-prometheus-stack:
   ##
   namespaceOverride: "monitoring"
 
+  alertmanager:
+    alertmanagerSpec:
+      nodeSelector:
+        gpuEnabled: "false"
+
+  prometheusOperator:
+    nodeSelector:
+      gpuEnabled: "false"
+
   prometheus:
     prometheusSpec:
+      nodeSelector:
+        gpuEnabled: "false"
+
       ## Scrape metrics from all service/pod monitors
       ## in the cluster with no filtering
       ##
@@ -23,7 +30,7 @@ kube-prometheus-stack:
 ## Toggle switch for rabbitmq exporter subchart
 ##
 rabbitmqExporter:
-  enabled: true
+  enabled: false
 
 ## Configuration for rabbitmq exporter subchart
 ##
