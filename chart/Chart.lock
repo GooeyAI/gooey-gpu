@@ -2,5 +2,11 @@ dependencies:
 - name: nfs-server-provisioner
   repository: https://kubernetes-sigs.github.io/nfs-ganesha-server-and-external-provisioner
   version: 1.8.0
-digest: sha256:8200f9651f964f2c4eb0779d49391656ec24dcddec3689c68e665015b0376efa
-generated: "2024-01-12T18:12:09.99514+05:30"
+- name: redis
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 18.12.1
+- name: rabbitmq
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 12.9.3
+digest: sha256:4dce0e7e3f8726d6ec547ee84efe04f766239bdf495566ccca5c2261819da52e
+generated: "2024-02-12T16:19:17.70626+05:30"
