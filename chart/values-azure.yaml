@@ -475,3 +475,45 @@ nfs-server-provisioner:
 
   storageClass:
     defaultClass: true
+
+redis:
+  enabled: true
+
+  architecture: "standalone"
+  commonConfiguration: |
+    maxmemory 1gb
+    maxmemory-policy allkeys-lru
+
+  master:
+    nodeSelector:
+      gpuEnabled: "false"
+    persistence:
+      enabled: true
+      size: "8Gi"
+    resources:
+      limits:
+        memory: "1Gi"
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+rabbitmq:
+  enabled: true
+
+  nodeSelector:
+    gpuEnabled: "false"
+  limits: {}
+
+  persistence:
+    enabled: true
+    size: "8Gi"
+
+  auth:
+    username: "rabbit"
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true

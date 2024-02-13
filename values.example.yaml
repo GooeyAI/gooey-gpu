@@ -5,3 +5,17 @@ commonEnv:
   HUGGING_FACE_HUB_TOKEN: "hf_XXXX"
 
 namespace: "default"
+
+redis:
+  service:
+    type: "LoadBalancer"
+    loadBalancerIP: "XX.XX.XX.XX"
+    loadBalancerSourceRanges:
+    - "XX.XX.XX.XX/32"
+
+rabbitmq:
+  service:
+    type: "LoadBalancer"
+    loadBalancerIP: "XX.XX.XX.XX"
+    loadBalancerSourceRanges:
+    - "XX.XX.XX.XX/32"
