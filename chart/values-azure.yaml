@@ -486,7 +486,9 @@ rabbitmq:
 
   nodeSelector:
     gpuEnabled: "false"
-  limits: {}
+  resources:
+    limits:
+      memory: "2Gi"
 
   persistence:
     enabled: true
@@ -494,6 +496,9 @@ rabbitmq:
 
   auth:
     username: "rabbit"
+
+  configuration: |
+    consumer_timeout = 86400000
 
   metrics:
     enabled: true
