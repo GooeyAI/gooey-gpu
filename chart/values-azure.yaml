@@ -28,9 +28,9 @@ rabbitmqAutoscaling:
       minReplicaCount: 2
       maxReplicaCount: 12
     "common-diffusion-new":
-      queueLength: "20"
+      queueLength: "10"
       minReplicaCount: 1
-      maxReplicaCount: 3
+      maxReplicaCount: 5
     "deforum-sd-epicdream":
       queueLength: "2"
       minReplicaCount: 1
