@@ -46,7 +46,7 @@ spec:
           {{- end }}
         livenessProbe:
           exec:
-            command: [ bash -c "celery inspect ping -d celery@$HOSTNAME" ]
+            command: [ "bash", "-c", "celery inspect ping -d celery@$HOSTNAME" ]
           failureThreshold: 5  # consider it dead after 5 failed attempts (10 mins)
           periodSeconds: 120  # default is quite often and celery uses a lot cpu/ram then. (2 min)
           timeoutSeconds: 20  # default is too low
