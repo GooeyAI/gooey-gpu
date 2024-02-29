@@ -70,7 +70,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -94,7 +95,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -118,7 +120,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -139,7 +142,8 @@ deployments:
     image: *deforumImg
     replicas: 2
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -158,7 +162,8 @@ deployments:
     image: *deforumImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -177,7 +182,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -197,7 +203,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -217,7 +224,8 @@ deployments:
     image: *retroImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -237,7 +245,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -261,7 +270,8 @@ deployments:
     image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -281,7 +291,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -300,7 +311,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -319,7 +331,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -340,7 +353,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -361,7 +375,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -382,7 +397,8 @@ deployments:
     image: *commonImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -406,7 +422,8 @@ deployments:
     image: *retroImg
     replicas: 3
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
@@ -425,7 +442,8 @@ deployments:
     image: *retroImg
     replicas: 1
     nodeSelector:
-      agentpool: "a100spot"
+      gpuEnabled: "true"
+      gpuType: "a100"
     tolerations:
       - key: "kubernetes.azure.com/scalesetpriority"
         operator: "Equal"
