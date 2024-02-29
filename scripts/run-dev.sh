@@ -61,11 +61,12 @@ docker run \
   "\
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
-  -e HUGGING_FACE_HUB_TOKEN=$HUGGING_FACE_HUB_TOKEN \
+  -v $HOME/.cache/suno:/root/.cache/suno \
   -v $HOME/.cache/gooey-gpu:/root/.cache/gooey-gpu \
+  -e HUGGING_FACE_HUB_TOKEN=$HUGGING_FACE_HUB_TOKEN \
   -v $HOME/.cache/huggingface:/root/.cache/huggingface \
   -v $HOME/.cache/torch:/root/.cache/torch \
-  -v $HOME/.cache/suno:/root/.cache/suno \
-  --net host --runtime=nvidia --gpus all --memory 14g \
+  --net host --runtime=nvidia --gpus all \
+  --memory 14g \
   -it --rm --name $IMG \
   $IMG:latest
