@@ -3,7 +3,7 @@
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: keda-trigger-auth-rabbitmq-conn
+  name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
   namespace: "{{ $.Values.namespace }}"
 spec:
   env:
@@ -38,7 +38,7 @@ spec:
         mode: QueueLength
         value: "{{ $overrides.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
       authenticationRef:
-        name: keda-trigger-auth-rabbitmq-conn
+        name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
     {{- end }}
     {{- else }}
     {{- $queuePrefix := get $deployment.env "QUEUE_PREFIX" | default "gooey-gpu" }}
@@ -52,7 +52,7 @@ spec:
         mode: QueueLength
         value: "{{ $overrides.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
       authenticationRef:
-        name: keda-trigger-auth-rabbitmq-conn
+        name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
     {{- end }}
     {{- end }}
     {{- end }}
