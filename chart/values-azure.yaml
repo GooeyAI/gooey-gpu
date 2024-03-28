@@ -20,10 +20,6 @@ rabbitmqAutoscaling:
       queueLength: "2"  # tasks per replica
       minReplicaCount: 2
       maxReplicaCount: 12
-    "common-diffusion-new":
-      queueLength: "10"
-      minReplicaCount: 1
-      maxReplicaCount: 5
     "deforum-sd-epicdream":
       queueLength: "2"
       minReplicaCount: 1
@@ -51,7 +47,7 @@ controlnetModelIds: &controlnetModelIds |-
     monster-labs/control_v1p_sd15_qrcode_monster/v2
 
 deployments:
-  - name: "common-diffusion-new"
+  - name: "common-diffusion-dreamshaper"
     image: *commonImg
     replicas: 1
     nodeSelector:
@@ -63,7 +59,7 @@ deployments:
         value: "spot"
         effect: "NoSchedule"
     limits:
-      memory: "50Gi"
+      memory: "16Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -72,8 +68,68 @@ deployments:
       CONTROLNET_MODEL_IDS: *controlnetModelIds
       SD_MODEL_IDS: |-
         Lykon/DreamShaper
+  - name: "common-diffusion-stable-diffusion-2-1"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      gpuEnabled: "true"
+      gpuType: "a100"
+    tolerations:
+      - key: "kubernetes.azure.com/scalesetpriority"
+        operator: "Equal"
+        value: "spot"
+        effect: "NoSchedule"
+    limits:
+      memory: "16Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
         stabilityai/stable-diffusion-2-1
+  - name: "common-diffusion-dreamlike-photoreal-2"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      gpuEnabled: "true"
+      gpuType: "a100"
+    tolerations:
+      - key: "kubernetes.azure.com/scalesetpriority"
+        operator: "Equal"
+        value: "spot"
+        effect: "NoSchedule"
+    limits:
+      memory: "16Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
         dreamlike-art/dreamlike-photoreal-2.0
+  - name: "common-diffusion-stable-diffusion-v1-5"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      gpuEnabled: "true"
+      gpuType: "a100"
+    tolerations:
+      - key: "kubernetes.azure.com/scalesetpriority"
+        operator: "Equal"
+        value: "spot"
+        effect: "NoSchedule"
+    limits:
+      memory: "16Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
         runwayml/stable-diffusion-v1-5
 
   - name: "common-diffusion-on-demand"
