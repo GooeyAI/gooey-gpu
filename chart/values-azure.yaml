@@ -59,7 +59,7 @@ deployments:
         value: "spot"
         effect: "NoSchedule"
     limits:
-      memory: "16Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -80,7 +80,7 @@ deployments:
         value: "spot"
         effect: "NoSchedule"
     limits:
-      memory: "16Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -101,7 +101,7 @@ deployments:
         value: "spot"
         effect: "NoSchedule"
     limits:
-      memory: "16Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -122,7 +122,7 @@ deployments:
         value: "spot"
         effect: "NoSchedule"
     limits:
-      memory: "16Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
