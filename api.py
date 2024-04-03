@@ -109,6 +109,16 @@ class WhisperInputs(BaseModel):
     batch_size: int = 16
 
 
+class MMSInputs(BaseModel):
+    audio: str
+    language: str
+    return_timestamps: bool = False
+
+    chunk_length_s: float = 30
+    stride_length_s: typing.Tuple[float, float] = (6, 0)
+    batch_size: int = 8
+
+
 class NemoASRInputs(BaseModel):
     audio: str
 

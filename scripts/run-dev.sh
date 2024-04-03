@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
-if [ "$#" -lt 1 ]; then
-    echo "usage: $0 <variant> (<port>)"
+if [ "$#" -lt 2 ]; then
+    echo "usage: $0 <variant> <imports>"
     exit 1
 fi
 
 VARIANT=$1
 IMG=gooey-gpu-$VARIANT
+
+IMPORTS=$2
 
 echo "Starting $IMG (via $VARIANT)..."
 
@@ -17,9 +19,7 @@ docker tag $IMG us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/$VARIANT
 
 docker rm -f $IMG || true
 docker run \
-  -e IMPORTS="
-    retro.wav2lip
-  " \
+  -e IMPORTS=$IMPORTS \
   -e WAV2LIP_MODEL_IDS="
     wav2lip_gan.pth
   " \
@@ -30,6 +30,9 @@ docker run \
     intfloat/e5-large-v2
     intfloat/e5-base-v2
     intfloat/multilingual-e5-base
+  "\
+  -e MMS_MODEL_IDS="
+    facebook/mms-1b-all
   "\
   -e WHISPER_MODEL_IDS="
     openai/whisper-large-v2

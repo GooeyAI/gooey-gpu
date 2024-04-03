@@ -368,6 +368,26 @@ deployments:
       SD_MODEL_IDS: |-
         stabilityai/stable-diffusion-x4-upscaler
 
+  - name: "common-mms"
+    image: *commonImg
+    replicas: 1
+    nodeSelector:
+      gpuEnabled: "true"
+      gpuType: "a100"
+    tolerations:
+      - key: "kubernetes.azure.com/scalesetpriority"
+        operator: "Equal"
+        value: "spot"
+        effect: "NoSchedule"
+    limits:
+      memory: "25Gi"
+      cpu: "1"
+    env:
+      IMPORTS: |-
+        common.mms
+      WHISPER_MODEL_IDS: |-
+        facebook/mms-1b-all
+
   - name: "common-whisper-en-te-long"
     image: *commonImg
     replicas: 1
