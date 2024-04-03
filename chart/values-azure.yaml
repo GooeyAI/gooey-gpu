@@ -369,7 +369,7 @@ deployments:
         stabilityai/stable-diffusion-x4-upscaler
 
   - name: "common-mms"
-    image: *commonImg
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:1"
     replicas: 1
     nodeSelector:
       gpuEnabled: "true"
@@ -385,7 +385,7 @@ deployments:
     env:
       IMPORTS: |-
         common.mms
-      WHISPER_MODEL_IDS: |-
+      MMS_MODEL_IDS: |-
         facebook/mms-1b-all
 
   - name: "common-whisper-en-te-long"

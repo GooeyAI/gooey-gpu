@@ -62,6 +62,7 @@ docker run \
   -e U2NET_MODEL_IDS="
     u2net
   "\
+  -e C_FORCE_ROOT=1 \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
   -v $HOME/.cache/suno:/root/.cache/suno \
