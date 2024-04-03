@@ -369,7 +369,7 @@ deployments:
         stabilityai/stable-diffusion-x4-upscaler
 
   - name: "common-mms"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:1"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:2"
     replicas: 1
     nodeSelector:
       gpuEnabled: "true"
