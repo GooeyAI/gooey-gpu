@@ -5,13 +5,13 @@ import requests
 import transformers
 
 import gooey_gpu
-from api import PipelineInfo, WhisperInputs, AsrOutput
+from api import PipelineInfo, MMSInputs, AsrOutput
 from celeryconfig import app, setup_queues
 
 
 @app.task(name="mms")
 @gooey_gpu.endpoint
-def mms(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
+def mms(pipeline: PipelineInfo, inputs: MMSInputs) -> AsrOutput:
     audio = requests.get(inputs.audio).content
     pipe = load_pipe(pipeline.model_id)
 
