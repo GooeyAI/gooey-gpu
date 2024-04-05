@@ -50,14 +50,6 @@ deployments:
   - name: "common-diffusion-dreamshaper"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "20Gi"
       cpu: "1"
@@ -71,14 +63,6 @@ deployments:
   - name: "common-diffusion-stable-diffusion-2-1"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "20Gi"
       cpu: "1"
@@ -92,14 +76,6 @@ deployments:
   - name: "common-diffusion-dreamlike-photoreal-2"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "20Gi"
       cpu: "1"
@@ -113,14 +89,6 @@ deployments:
   - name: "common-diffusion-stable-diffusion-v1-5"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "20Gi"
       cpu: "1"
@@ -135,14 +103,6 @@ deployments:
   - name: "common-diffusion-on-demand"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "37Gi"
       cpu: "1"
@@ -160,14 +120,6 @@ deployments:
   - name: "common-diffusion-inpaint"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -182,14 +134,6 @@ deployments:
   - name: "deforum-sd-1"
     image: *deforumImg
     replicas: 2
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -202,14 +146,6 @@ deployments:
   - name: "deforum-sd-epicdream"
     image: *deforumImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -222,14 +158,6 @@ deployments:
   - name: "common-whisper-en-short"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -243,14 +171,6 @@ deployments:
   - name: "common-whisper-te-short"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -264,14 +184,6 @@ deployments:
   - name: "retro-nemo-asr"
     image: *retroImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -285,14 +197,6 @@ deployments:
   - name: "common-audio-ldm-bark"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -310,14 +214,6 @@ deployments:
   - name: "common-seamless"
     image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "19Gi"
       cpu: "1"
@@ -331,14 +227,6 @@ deployments:
   - name: "common-diffusion-instruct-pix2pix"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "11Gi"
       cpu: "1"
@@ -351,14 +239,6 @@ deployments:
   - name: "common-diffusion-upscale"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "52Gi"
       cpu: "1"
@@ -371,14 +251,6 @@ deployments:
   - name: "common-mms"
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:2"
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "25Gi"
       cpu: "1"
@@ -391,14 +263,6 @@ deployments:
   - name: "common-whisper-en-te-long"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "40Gi"
       cpu: "1"
@@ -413,14 +277,6 @@ deployments:
   - name: "common-whisper-hi-bho-long"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "40Gi"
       cpu: "1"
@@ -435,14 +291,6 @@ deployments:
   - name: "common-whisper-hi-bho-short"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "10Gi"
       cpu: "1"
@@ -457,14 +305,6 @@ deployments:
   - name: "common-embeddings-1"
     image: *commonImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "18Gi"
       cpu: "1"
@@ -482,14 +322,6 @@ deployments:
   - name: "retro-wav2lip-gan"
     image: *retroImg
     replicas: 3
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "37Gi"
       cpu: "1"
@@ -502,14 +334,6 @@ deployments:
   - name: "retro-u2net-dis"
     image: *retroImg
     replicas: 1
-    nodeSelector:
-      gpuEnabled: "true"
-      gpuType: "a100"
-    tolerations:
-      - key: "kubernetes.azure.com/scalesetpriority"
-        operator: "Equal"
-        value: "spot"
-        effect: "NoSchedule"
     limits:
       memory: "9Gi"
       cpu: "1"
