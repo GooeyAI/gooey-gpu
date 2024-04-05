@@ -8,7 +8,7 @@ metadata:
   labels:
     app: "{{ $.Release.Name }}-{{ .name }}"
 spec:
-  replicas: {{ .replicas | default 1 }}
+  replicas: {{ .minReplicaCount | default 1 }}
   selector:
     matchLabels:
       name: "{{ $.Release.Name }}-{{ .name }}"

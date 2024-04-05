@@ -13,7 +13,6 @@ spec:
 
 {{- if .Values.rabbitmqAutoscaling.enabled }}
 {{- range $deployment := .Values.deployments }}
-{{- $overrides := get $.Values.rabbitmqAutoscaling.overrides .name | default (dict) }}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
@@ -23,20 +22,20 @@ metadata:
 spec:
   scaleTargetRef:
     name: "{{ $.Release.Name }}-{{ .name }}"
-  {{- $minReplicaCount := $overrides.minReplicaCount | default $deployment.replicas }}
+  {{- $minReplicaCount := $deployment.minReplicaCount | default 1 }}
   minReplicaCount: {{ $minReplicaCount }}
-  maxReplicaCount: {{ $overrides.maxReplicaCount | default (add $minReplicaCount 2) }}
+  maxReplicaCount: {{ $deployment.maxReplicaCount | default (add $minReplicaCount 2) }}
   pollingInterval: 3
   cooldownPeriod: 1200
   triggers:
-    {{- if $overrides.queueNames }}
-    {{- range $queueName := $overrides.queueNames }}
+    {{- if $deployment.queueNames }}
+    {{- range $queueName := $deployment.queueNames }}
     - type: rabbitmq
       metadata:
         protocol: amqp
         queueName: "{{ $queueName }}"
         mode: QueueLength
-        value: "{{ $overrides.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
+        value: "{{ $deployment.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
       authenticationRef:
         name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
     {{- end }}
@@ -50,7 +49,7 @@ spec:
         protocol: amqp
         queueName: "{{ $queueName }}"
         mode: QueueLength
-        value: "{{ $overrides.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
+        value: "{{ $deployment.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
       authenticationRef:
         name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
     {{- end }}
