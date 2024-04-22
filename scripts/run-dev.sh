@@ -69,7 +69,6 @@ docker run \
   -e HUGGING_FACE_HUB_TOKEN=$HUGGING_FACE_HUB_TOKEN \
   -v $HOME/.cache/huggingface:/root/.cache/huggingface \
   -v $HOME/.cache/torch:/root/.cache/torch \
-  --net host --runtime=nvidia --gpus all \
-  --memory 14g \
+  --net host \
   -it --rm --name $IMG \
   $IMG:latest
