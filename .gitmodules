@@ -7,3 +7,6 @@
 [submodule "retro/Wav2Lip"]
 	path = retro/Wav2Lip
 	url = https://github.com/Rudrabha/Wav2Lip.git
+[submodule "sadtalker/SadTalker"]
+	path = sadtalker/SadTalker
+	url = https://github.com/OpenTalker/SadTalker.git
