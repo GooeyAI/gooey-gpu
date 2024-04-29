@@ -1,5 +1,12 @@
 commonEnv:
-  BROKER_URL: "amqp://username:password@service-name.svc.cluster.local:5672"
-  RESULT_BACKEND: "redis://:password@host"
+  # Deploy a rabbitmq server and make sure it is accessible from the cluster - https://www.rabbitmq.com/docs/install-debian
+  BROKER_URL: "amqp://<username>:<password>@<host>:5672"
+
+  # Deploy a redis instance and make sure it is accessible from the cluster - https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/install-redis-on-linux/
+  RESULT_BACKEND: "redis://:<password>@<host>:6379"
+
+  # Get the DSN from sentry account - https://sentry.io/
   SENTRY_DSN: "XXXX"
+
+  # Get the token from hugging face account - https://huggingface.co/docs/hub/en/security-tokens
   HUGGING_FACE_HUB_TOKEN: "hf_XXXX"
