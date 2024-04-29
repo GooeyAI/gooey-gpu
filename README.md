@@ -50,15 +50,44 @@ gooey-gpu also provides a small python helper library to make it easy to write c
    from functools import lru_cache
    import os
    
+   
    @lru_cache  # this will cache the model in memory and use it across calls
    def load_model(model_id: str):
        ...
+   
    
    setup_queues(
        model_ids=os.environ["MY_MODEL_IDS"].split(), # get the model ids from the env
        load_fn=load_model, # this tells the celery worker to load the model when starting
    )
    ```
+   
+   To load custom models, you can use the provided cache directory. The helm chart includes a nfs provisioner that mounts a shared directory across all the pods. You can use this directory to store the models.
+
+   ```python
+   ## common/my_model.py
+   import torch
+   import os
+   import gooey_gpu
+   from functools import lru_cache
+   
+   
+   @lru_cache
+   def load_model(model_id: str):
+       model_path = os.path.join(gooey_gpu.CHECKPOINTS_DIR, model_id)
+       if not os.path.exists(model_path):
+           ... # download the model from huggingface or any other source
+       return torch.load(model_path).to(gooey_gpu.DEVICE_ID)
+   ```
+   
+   You can also `kubectl exec` into a running pod a manually copy the model files to the shared directory.
+
+   ```bash
+   kubectl exec -it <pod-name> -n gpu -- bash
+   cd /root/.cache/gooey-gpu/checkpoints
+   ... # copy the model files here
+   ```
+   
     
 3. Define the model inference params and code
    ```python
