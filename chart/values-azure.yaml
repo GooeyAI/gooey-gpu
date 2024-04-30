@@ -325,8 +325,7 @@ deployments:
       IMPORTS: |-
         common.seamless_asr
       SEAMLESS_MODEL_IDS: |-
-        facebook/hf-seamless-m4t-large
-        facebook/hf-seamless-m4t-medium
+        facebook/seamless-m4t-v2-large
 
   - name: "common-diffusion-instruct-pix2pix"
     image: *commonImg

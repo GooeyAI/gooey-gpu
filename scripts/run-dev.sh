@@ -62,6 +62,9 @@ docker run \
   -e U2NET_MODEL_IDS="
     u2net
   "\
+  -e SEAMLESS_MODEL_IDS="
+    facebook/seamless-m4t-v2-large
+  "\
   -e C_FORCE_ROOT=1 \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
@@ -70,7 +73,7 @@ docker run \
   -e HUGGING_FACE_HUB_TOKEN=$HUGGING_FACE_HUB_TOKEN \
   -v $HOME/.cache/huggingface:/root/.cache/huggingface \
   -v $HOME/.cache/torch:/root/.cache/torch \
-  --net host --runtime=nvidia --gpus all \
+  --net host \
   --memory 14g \
   -it --rm --name $IMG \
   $IMG:latest
