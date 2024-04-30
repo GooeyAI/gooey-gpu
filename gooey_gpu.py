@@ -28,7 +28,6 @@ except ImportError:
 
 DEVICE_ID = os.environ.get("DEVICE_ID", "").strip() or "cuda:0"
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "").strip()
-MAX_WORKERS = int(os.environ.get("MAX_WORKERS", "").strip() or "1")
 DISABLE_CPU_OFFLOAD = bool(
     int(os.environ.get("DISABLE_CPU_OFFLOAD", "").strip() or "0")
 )

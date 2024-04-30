@@ -15,7 +15,6 @@ echo "Starting $IMG (via $VARIANT)..."
 set -ex
 
 docker build . -f $VARIANT/Dockerfile -t $IMG
-docker tag $IMG us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu-dev/$VARIANT
 
 docker rm -f $IMG || true
 docker run \

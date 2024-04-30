@@ -8,7 +8,7 @@ metadata:
   labels:
     app: "{{ $.Release.Name }}-{{ .name }}"
 spec:
-  replicas: {{ .replicas | default 1 }}
+  replicas: {{ .minReplicaCount | default 1 }}
   selector:
     matchLabels:
       name: "{{ $.Release.Name }}-{{ .name }}"
@@ -17,12 +17,14 @@ spec:
       labels:
         name: "{{ $.Release.Name }}-{{ .name }}"
     spec:
-      {{- if .nodeSelector }}
-      nodeSelector: {{- toYaml .nodeSelector | nindent 8 }}
-      {{- end }}
-      {{- if .tolerations }}
-      tolerations: {{- toYaml .tolerations | nindent 8 }}
-      {{- end}}
+      nodeSelector:
+        gpuEnabled: "true"
+        gpuType: a100
+      tolerations:
+        - effect: NoSchedule
+          key: kubernetes.azure.com/scalesetpriority
+          operator: Equal
+          value: spot
       containers:
       - name: "worker"
         image: "{{ .image }}"

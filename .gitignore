@@ -1,6 +1,5 @@
 k8s/
-values.yaml
-values-azure.yaml
+env-values.yaml
 
 # Chart dependencies
 **/charts/*.tgz
