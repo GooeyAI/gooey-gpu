@@ -61,6 +61,9 @@ docker run \
   -e U2NET_MODEL_IDS="
     u2net
   "\
+  -e SADTALKER_MODEL_IDS="
+    SadTalker_V0.0.2_512.safetensors
+  "\
   -e C_FORCE_ROOT=1 \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
