@@ -142,7 +142,7 @@ gooey-gpu also provides a small python helper library to make it easy to write c
 7. Run the development script
 
    ```bash
-   ./scripts/run-dev.sh common my_model
+   ./scripts/run-dev.sh common common.my_model
    ```
    
 8. Test the model by sending a request to the celery worker.
