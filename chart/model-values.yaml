@@ -296,7 +296,7 @@ deployments:
         thenlper/gte-base
 
   - name: "retro-sadtalker"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:1"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:2"
     limits:
       memory: "22Gi"
       cpu: "2"

@@ -299,7 +299,7 @@ def animate_from_coeff_generate(
             else:
                 oy1, oy2, ox1, ox2 = cly + ly, cly + ry, clx + lx, clx + rx
     else:
-        out_h, out_w = frame_w, frame_h
+        out_w, out_h = frame_w, frame_h
 
     cmd_args = [
         "ffmpeg",
@@ -340,16 +340,21 @@ def animate_from_coeff_generate(
             out_image = img_as_ubyte(
                 out_image.data.cpu().numpy().transpose([1, 2, 0]).astype(np.float32)
             )
-            out_image = cv2.resize(out_image, (frame_h, frame_w))
+            out_image = cv2.resize(out_image, (frame_w, frame_h))
 
             if "full" in preprocess.lower():
                 input_image = input_frames[i % len(input_frames)]
                 p = cv2.resize(out_image, (ox2 - ox1, oy2 - oy1))
                 mask = 255 * np.ones(p.shape, p.dtype)
                 location = ((ox1 + ox2) // 2, (oy1 + oy2) // 2)
-                out_image = cv2.seamlessClone(
-                    p, input_image, mask, location, cv2.NORMAL_CLONE
-                )
+                try:
+                    out_image = cv2.seamlessClone(
+                        p, input_image, mask, location, cv2.NORMAL_CLONE
+                    )
+                except cv2.error:
+                    raise ValueError(
+                        "Failed to perform full preprocess. Please use the crop mode or try a different aspect ratio."
+                    )
 
             ffproc.stdin.write(out_image.tostring())
 
