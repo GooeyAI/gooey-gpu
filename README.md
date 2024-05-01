@@ -202,7 +202,11 @@ gooey-gpu also provides a small python helper library to make it easy to write c
     docker tag gooey-gpu-common <registry>/<image>:<tag>
     docker push <registry>/<image>:<tag>
     ```
-    
+
+    You might need to login to your container registry before pushing the image. Eg for azure:
+    ```bash
+    az acr login --name <registry>
+    ```
 11. Update the `model-values.yaml` file with the new image (or create a new file)
   - Under `rabbitmqAutoscaling`, add the new env var name
       ```yaml

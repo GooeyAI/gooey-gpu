@@ -294,6 +294,17 @@ deployments:
         thenlper/gte-large
         thenlper/gte-base
 
+  - name: "retro-sadtalker"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:1"
+    limits:
+      memory: "22Gi"
+      cpu: "2"
+    env:
+      IMPORTS: |-
+        retro.sadtalker
+      MMS_MODEL_IDS: |-
+        SadTalker_V0.0.2_512.safetensors
+
   - name: "retro-wav2lip-gan"
     image: *retroImg
     minReplicaCount: 3
