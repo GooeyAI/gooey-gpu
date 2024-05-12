@@ -297,8 +297,9 @@ deployments:
 
   - name: "retro-sadtalker"
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:2"
+    maxReplicaCount: 5
     limits:
-      memory: "22Gi"
+      memory: "30Gi"
       cpu: "2"
     env:
       IMPORTS: |-
