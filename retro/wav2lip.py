@@ -195,6 +195,11 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
 
         if idx == 0:
             frame_h, frame_w = frame_batch[0].shape[:-1]
+            if frame_w * frame_h > 1920 * 1080:
+                raise ValueError(
+                    "Input video resolution exceeds 1920x1080. Please downscale to 1080p"
+                )
+
             cmd_args = [
                 "ffmpeg",
                 # "-thread_queue_size", "128",
