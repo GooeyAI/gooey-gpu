@@ -313,7 +313,7 @@ deployments:
     minReplicaCount: 3
     limits:
       memory: "37Gi"
-      cpu: "1"
+      cpu: "2"
     env:
       IMPORTS: |-
         retro.wav2lip
