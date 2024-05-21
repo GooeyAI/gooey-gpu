@@ -195,11 +195,6 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
 
         if idx == 0:
             frame_h, frame_w = frame_batch[0].shape[:-1]
-            if frame_w * frame_h > 1920 * 1080:
-                raise ValueError(
-                    "Input video resolution exceeds 1920x1080. Please downscale to 1080p"
-                )
-
             cmd_args = [
                 "ffmpeg",
                 # "-thread_queue_size", "128",
@@ -284,6 +279,10 @@ def read_n_frames(
 
 
 def resize_frame(frame, out_height: int) -> np.ndarray:
+    if frame.shape[0] * frame.shape[1] > 1920 * 1080:
+        raise ValueError(
+            "Input video resolution exceeds 1920x1080. Please downscale to 1080p"
+        )
     aspect_ratio = frame.shape[1] / frame.shape[0]
     out_width = int(out_height * aspect_ratio)
     if out_width % 2 != 0:
