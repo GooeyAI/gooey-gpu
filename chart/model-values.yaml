@@ -309,7 +309,7 @@ deployments:
         SadTalker_V0.0.2_512.safetensors
 
   - name: "retro-wav2lip-gan"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:4"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:5"
     minReplicaCount: 3
     limits:
       memory: "37Gi"
