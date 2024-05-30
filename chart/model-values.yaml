@@ -296,7 +296,7 @@ deployments:
         thenlper/gte-base
 
   - name: "retro-sadtalker"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:2"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:5"
     minReplicaCount: 2
     maxReplicaCount: 10
     limits:
