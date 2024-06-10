@@ -223,5 +223,10 @@ def upload_audio_from_bytes(audio: bytes, url: str):
     r.raise_for_status()
 
 
+def upload_video_from_bytes(video, url: str):
+    r = requests.put(url, headers={"Content-Type": "video/mp4"}, data=video)
+    r.raise_for_status()
+
+
 # Add some missing mimetypes
 mimetypes.add_type("audio/wav", ".wav")
