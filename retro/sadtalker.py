@@ -159,7 +159,7 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
         if inputs.ref_eyeblink:
             ref_eyeblink = urlretrieve(
                 inputs.ref_eyeblink, os.path.join(save_dir, "ref_eyeblink.mp4")
-            )
+            )[0]
             ref_eyeblink_coeff_path, _, _ = preprocess_model.generate(
                 ref_eyeblink,
                 save_dir,
@@ -172,7 +172,7 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
         if inputs.ref_pose:
             ref_pose = urlretrieve(
                 inputs.ref_pose, os.path.join(save_dir, "ref_pose.mp4")
-            )
+            )[0]
             if ref_pose == ref_eyeblink:
                 ref_pose_coeff_path = ref_eyeblink_coeff_path
             else:
