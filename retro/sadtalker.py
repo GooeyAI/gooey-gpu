@@ -122,11 +122,11 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
         input_path, _ = urlretrieve(
             inputs.source_image,
             os.path.join(save_dir, "face" + os.path.splitext(inputs.source_image)[1]),
-        )
+        )[0]
         audio_path, _ = urlretrieve(
             inputs.driven_audio,
             os.path.join(save_dir, "audio" + os.path.splitext(inputs.driven_audio)[1]),
-        )
+        )[0]
         if audio_mime_type != "audio/wav":
             wav_audio_path = audio_path + ".wav"
             args = [
