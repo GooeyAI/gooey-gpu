@@ -6,7 +6,6 @@ autoscaling:
   minReplicaCount: 1
   maxReplicaCount: 3
   queueNameVars:
-    - MODEL_IDS
     - SD_MODEL_IDS
     - WHISPER_MODEL_IDS
     - EMBEDDING_MODEL_IDS
@@ -19,6 +18,7 @@ autoscaling:
     - SEAMLESS_MODEL_IDS
     - MMS_MODEL_IDS
     - SADTALKER_MODEL_IDS
+    - DEFORUM_MODEL_IDS
 
 controlnetModelIds: &controlnetModelIds |-
     lllyasviel/sd-controlnet-canny
@@ -128,7 +128,7 @@ deployments:
     env:
       IMPORTS: |-
         deforum_sd
-      MODEL_IDS: |-
+      DEFORUM_MODEL_IDS: |-
         Protogen_V2.2.ckpt
 
   - name: "deforum-sd-epicdream"
@@ -143,7 +143,7 @@ deployments:
     env:
       IMPORTS: |-
         deforum_sd
-      MODEL_IDS: |-
+      DEFORUM_MODEL_IDS: |-
         epicdream.safetensors
 
   - name: "common-whisper-en-short"
