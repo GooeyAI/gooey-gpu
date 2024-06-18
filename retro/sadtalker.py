@@ -122,11 +122,11 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
         input_path, _ = urlretrieve(
             inputs.source_image,
             os.path.join(save_dir, "face" + os.path.splitext(inputs.source_image)[1]),
-        )[0]
+        )
         audio_path, _ = urlretrieve(
             inputs.driven_audio,
             os.path.join(save_dir, "audio" + os.path.splitext(inputs.driven_audio)[1]),
-        )[0]
+        )
         if audio_mime_type != "audio/wav":
             wav_audio_path = audio_path + ".wav"
             args = [
@@ -157,9 +157,9 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
             raise ValueError("Can't get the coeffs of the input")
 
         if inputs.ref_eyeblink:
-            ref_eyeblink = urlretrieve(
+            ref_eyeblink, _ = urlretrieve(
                 inputs.ref_eyeblink, os.path.join(save_dir, "ref_eyeblink.mp4")
-            )[0]
+            )
             ref_eyeblink_coeff_path, _, _ = preprocess_model.generate(
                 ref_eyeblink,
                 save_dir,
@@ -170,9 +170,9 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
             ref_eyeblink_coeff_path = None
 
         if inputs.ref_pose:
-            ref_pose = urlretrieve(
+            ref_pose, _ = urlretrieve(
                 inputs.ref_pose, os.path.join(save_dir, "ref_pose.mp4")
-            )[0]
+            )
             if ref_pose == ref_eyeblink:
                 ref_pose_coeff_path = ref_eyeblink_coeff_path
             else:
