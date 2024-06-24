@@ -19,6 +19,8 @@ autoscaling:
     - MMS_MODEL_IDS
     - SADTALKER_MODEL_IDS
     - DEFORUM_MODEL_IDS
+    - GFPGAN_MODEL_IDS
+    - ESRGAN_MODEL_IDS
 
 controlnetModelIds: &controlnetModelIds |-
     lllyasviel/sd-controlnet-canny
@@ -338,12 +340,12 @@ deployments:
       cpu: "1"
     env:
       IMPORTS: |-
-          retro.u2net
-          retro.dis
+        retro.u2net
+        retro.dis
       U2NET_MODEL_IDS: |-
-          u2net
+        u2net
       DIS_MODEL_IDS: |-
-          isnet-general-use.pth
+        isnet-general-use.pth
 
   - name: "retro-gfpgan-esrgan"
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:8"
@@ -356,11 +358,11 @@ deployments:
       cpu: "2"
     env:
       IMPORTS: |-
-          retro.gfpgan
+        retro.gfpgan
       GFPGAN_MODEL_IDS: |-
-          GFPGANv1.4
+        GFPGANv1.4
       ESRGAN_MODEL_IDS: |-
-          RealESRGAN_x2plus
+        RealESRGAN_x2plus
 
 
 ## Dependencies
