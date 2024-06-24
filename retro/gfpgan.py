@@ -24,13 +24,44 @@ from ffmpeg_util import (
 MAX_RES = 1920 * 1080
 
 
+class EsrganPipeline(BaseModel):
+    upload_urls: typing.List[HttpUrl]  # upload url for the output video
+    model_id: str
+
+
+class EsrganInputs(BaseModel):
+    image: typing.Optional[str]
+    video: typing.Optional[str]
+    scale: float = 2
+
+
+@app.task(name="realesrgan")
+@gooey_gpu.endpoint
+def realesrgan(
+    pipeline: EsrganPipeline, inputs: EsrganInputs
+) -> InputOutputVideoMetadata:
+    esrganer = load_esrgan_model(pipeline.model_id)
+
+    def enhance(frame, outscale_factor):
+        restored_img, _ = esrganer.enhance(frame, outscale=outscale_factor)
+        return restored_img
+
+    return run_enhancer(
+        image=inputs.image,
+        video=inputs.video,
+        scale=inputs.scale,
+        upload_url=pipeline.upload_urls[0],
+        enhance=enhance,
+    )
+
+
 class GfpganPipeline(BaseModel):
     upload_urls: typing.List[HttpUrl]  # upload url for the output video
     model_id: str
     bg_model_id: typing.Optional[str] = None
 
 
-class GfpganInput(BaseModel):
+class GfpganInputs(BaseModel):
     image: typing.Optional[str]
     video: typing.Optional[str]
     scale: float = 2
@@ -39,19 +70,45 @@ class GfpganInput(BaseModel):
 
 @app.task(name="gfpgan")
 @gooey_gpu.endpoint
-def gfpgan(pipeline: GfpganPipeline, inputs: GfpganInput) -> InputOutputVideoMetadata:
-    assert inputs.image or inputs.video, "Please provide an image or video input"
-
-    restorer = load_gfpgan_model(pipeline.model_id)
+def gfpgan(pipeline: GfpganPipeline, inputs: GfpganInputs) -> InputOutputVideoMetadata:
+    gfpganer = load_gfpgan_model(pipeline.model_id)
     if pipeline.bg_model_id:
-        restorer.bg_upsampler = load_esrgan_model(pipeline.bg_model_id)
+        gfpganer.bg_upsampler = load_esrgan_model(pipeline.bg_model_id)
+
+    def enhance(frame, upscale_factor):
+        gfpganer.upscale = gfpganer.face_helper.upscale_factor = upscale_factor
+        cropped_faces, restored_faces, restored_img = gfpganer.enhance(
+            frame,
+            # has_aligned=args.aligned,
+            # only_center_face=args.only_center_face,
+            # paste_back=True,
+            weight=inputs.weight,
+        )
+        return restored_img
+
+    return run_enhancer(
+        image=inputs.image,
+        video=inputs.video,
+        scale=inputs.scale,
+        upload_url=pipeline.upload_urls[0],
+        enhance=enhance,
+    )
+
+
+def run_enhancer(
+    image: str | None,
+    video: str | None,
+    scale: float,
+    upload_url: str,
+    enhance: typing.Callable,
+) -> InputOutputVideoMetadata:
+    input_file = image or video
+    assert input_file, "Please provide an image or video input"
 
     with TemporaryDirectory() as save_dir:
         input_path, _ = urlretrieve(
-            inputs.image or inputs.video,
-            os.path.join(
-                save_dir, "face" + os.path.splitext(inputs.image or inputs.video)[1]
-            ),
+            input_file,
+            os.path.join(save_dir, "input" + os.path.splitext(input_file)[1]),
         )
         output_path = os.path.join(save_dir, "out.mp4")
 
@@ -65,8 +122,7 @@ def gfpgan(pipeline: GfpganPipeline, inputs: GfpganInput) -> InputOutputVideoMet
                 "Input video resolution exceeds 1920x1080. Please downscale to 1080p."
             )
         max_scale = math.sqrt(MAX_RES / input_pixels)
-        upscale_factor = max(min(inputs.scale, max_scale), 1)
-        restorer.upscale = restorer.face_helper.upscale_factor = upscale_factor
+        upscale_factor = max(min(scale, max_scale), 1)
         print(f"Using upscale factor: {upscale_factor}")
 
         ffproc = None
@@ -76,20 +132,14 @@ def gfpgan(pipeline: GfpganPipeline, inputs: GfpganInput) -> InputOutputVideoMet
             input_path=input_path,
             fps=response.input.fps or 24,
         ):
-            cropped_faces, restored_faces, restored_img = restorer.enhance(
-                frame,
-                # has_aligned=args.aligned,
-                # only_center_face=args.only_center_face,
-                # paste_back=True,
-                weight=inputs.weight,
-            )
+            restored_img = enhance(frame, upscale_factor)
             if restored_img is None:
                 continue
 
-            if inputs.image:
+            if image:
                 gooey_gpu.upload_image(
                     PIL.Image.fromarray(restored_img, mode="RGB"),
-                    pipeline.upload_urls[0],
+                    upload_url,
                 )
                 response.output.codec_name = "png"
                 break
@@ -112,7 +162,7 @@ def gfpgan(pipeline: GfpganPipeline, inputs: GfpganInput) -> InputOutputVideoMet
             ffproc.stdin.close()
             ffproc.wait()
             with open(output_path, "rb") as f:
-                gooey_gpu.upload_video_from_bytes(f.read(), pipeline.upload_urls[0])
+                gooey_gpu.upload_video_from_bytes(f.read(), upload_url)
 
         if response.output.num_frames:
             response.output.duration_sec = (

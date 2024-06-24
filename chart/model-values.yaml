@@ -356,8 +356,7 @@ deployments:
       cpu: "2"
     env:
       IMPORTS: |-
-          retro.u2net
-          retro.dis
+          retro.gfpgan
       GFPGAN_MODEL_IDS: |-
           https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth
       ESRGAN_MODEL_IDS: |-
