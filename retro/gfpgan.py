@@ -10,6 +10,7 @@ from basicsr.archs.rrdbnet_arch import RRDBNet
 from gfpgan import GFPGANer
 from pydantic import BaseModel, HttpUrl
 from realesrgan import RealESRGANer
+from tqdm import tqdm
 
 import gooey_gpu
 from celeryconfig import app, setup_queues
@@ -96,8 +97,8 @@ def gfpgan(pipeline: GfpganPipeline, inputs: GfpganInputs) -> InputOutputVideoMe
 
 
 def run_enhancer(
-    image: str | None,
-    video: str | None,
+    image: typing.Optional[str],
+    video: typing.Optional[str],
     scale: float,
     upload_url: str,
     enhance: typing.Callable,
@@ -126,11 +127,14 @@ def run_enhancer(
         print(f"Using upscale factor: {upscale_factor}")
 
         ffproc = None
-        for frame in ffmpeg_read_input_frames(
-            width=response.input.width,
-            height=response.input.height,
-            input_path=input_path,
-            fps=response.input.fps or 24,
+        for frame in tqdm(
+            ffmpeg_read_input_frames(
+                width=response.input.width,
+                height=response.input.height,
+                input_path=input_path,
+                fps=response.input.fps or 24,
+            ),
+            total=response.input.num_frames,
         ):
             restored_img = enhance(frame, upscale_factor)
             if restored_img is None:

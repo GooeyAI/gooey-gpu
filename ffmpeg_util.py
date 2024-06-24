@@ -58,7 +58,7 @@ def ffmpeg_read_input_frames(
     *, width: float, height: float, input_path: str, fps: float
 ) -> typing.Iterator[np.ndarray]:
     cmd_args = [
-        "ffmpeg", "-hide_banner",
+        "ffmpeg", "-hide_banner", "-nostats",
         "-i", input_path,
         "-f", "rawvideo",
         "-pix_fmt", "rgb24",
@@ -81,7 +81,7 @@ def ffmpeg_get_writer_proc(
     *, width: int, height: int, output_path: str, fps: float, audio_path: str
 ) -> subprocess.Popen:
     cmd_args = [
-        "ffmpeg", "-hide_banner",
+        "ffmpeg", "-hide_banner", "-nostats",
         # "-thread_queue_size", "128",
         "-pixel_format", "rgb24",
         "-f", "rawvideo",
