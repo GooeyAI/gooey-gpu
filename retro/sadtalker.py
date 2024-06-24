@@ -1,4 +1,3 @@
-import json
 import mimetypes
 import os
 import subprocess
@@ -17,6 +16,13 @@ from tqdm import tqdm
 
 import gooey_gpu
 from celeryconfig import app, setup_queues
+from ffmpeg_util import (
+    ffprobe_video,
+    ffmpeg_read_input_frames,
+    VideoMetadata,
+    ffmpeg_get_writer_proc,
+    InputOutputVideoMetadata,
+)
 
 sadtalker_lib_path = os.path.join(os.path.dirname(__file__), "SadTalker")
 sys.path.append(sadtalker_lib_path)
@@ -28,6 +34,9 @@ from src.test_audio2coeff import Audio2Coeff
 from src.utils.init_path import init_path
 from src.utils.preprocess import CropAndExtract
 from src.facerender.modules.make_animation import keypoint_transformation
+
+
+MAX_RES = 1920 * 1080
 
 
 class SadtalkerPipeline(BaseModel):
@@ -67,13 +76,15 @@ class SadtalkerInput(BaseModel):
     )
 
 
-checkpoint_dir = os.path.join(gooey_gpu.CHECKPOINTS_DIR, "sadtalker")
 try:
     os.symlink(
-        os.path.join(checkpoint_dir, "gfpgan"), "gfpgan", target_is_directory=True
+        os.path.join(gooey_gpu.CHECKPOINTS_DIR, "gfpgan"),
+        "gfpgan",
+        target_is_directory=True,
     )
 except FileExistsError:
     pass
+checkpoint_dir = os.path.join(gooey_gpu.CHECKPOINTS_DIR, "sadtalker")
 
 
 @lru_cache
@@ -107,7 +118,9 @@ setup_queues(
 
 @app.task(name="lipsync.sadtalker")
 @gooey_gpu.endpoint
-def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
+def sadtalker(
+    pipeline: SadtalkerPipeline, inputs: SadtalkerInput
+) -> InputOutputVideoMetadata:
     assert len(pipeline.upload_urls) == 1, "Expected exactly 1 upload url"
 
     face_mime_type = mimetypes.guess_type(inputs.source_image)[0] or ""
@@ -138,6 +151,14 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
             print("\t$ " + " ".join(args))
             print(subprocess.check_output(args, encoding="utf-8"))
             audio_path = wav_audio_path
+
+        response = InputOutputVideoMetadata(
+            input=ffprobe_video(input_path), output=VideoMetadata()
+        )
+        if response.input.width * response.input.height > MAX_RES:
+            raise ValueError(
+                "Input video resolution exceeds 1920x1080. Please downscale to 1080p."
+            )
 
         preprocess_model, audio_to_coeff, animate_from_coeff = load_model(
             pipeline.model_id, "full" if "full" in pipeline.preprocess else "crop"
@@ -226,6 +247,7 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
         )
 
         result_path = animate_from_coeff_generate(
+            response,
             animate_from_coeff,
             x=data,
             video_save_dir=save_dir,
@@ -240,8 +262,11 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
         with open(result_path, "rb") as f:
             gooey_gpu.upload_video_from_bytes(f.read(), pipeline.upload_urls[0])
 
+    return response
+
 
 def animate_from_coeff_generate(
+    response,
     self,
     x,
     video_save_dir,
@@ -273,7 +298,7 @@ def animate_from_coeff_generate(
         roll_c_seq = None
 
     video_name = x["video_name"] + ".mp4"
-    return_path = os.path.join(video_save_dir, video_name)
+    return_path = str(os.path.join(video_save_dir, video_name))
 
     img_size = int(img_size) // 2 * 2
     original_size = crop_info[0]
@@ -285,8 +310,16 @@ def animate_from_coeff_generate(
     else:
         frame_w, frame_h = (img_size, img_size)
 
+    response.output.fps = 25
     if "full" in preprocess.lower():
-        input_frames, out_w, out_h = read_video_frames(input_path)
+        input_frames = list(
+            ffmpeg_read_input_frames(
+                width=response.input.width,
+                height=response.input.height,
+                input_path=input_path,
+                fps=response.output.fps,
+            )
+        )
 
         if len(crop_info) != 3:
             raise ValueError("you didn't crop the image")
@@ -298,28 +331,9 @@ def animate_from_coeff_generate(
                 oy1, oy2, ox1, ox2 = cly, cry, clx, crx
             else:
                 oy1, oy2, ox1, ox2 = cly + ly, cly + ry, clx + lx, clx + rx
-    else:
-        out_w, out_h = frame_w, frame_h
 
-    cmd_args = [
-        "ffmpeg",
-        # "-thread_queue_size", "128",
-        "-pixel_format", "rgb24",
-        "-f", "rawvideo",
-        # "-vcodec", "rawvideo",
-        "-s", f"{out_w}x{out_h}",
-        "-r", "25",
-        "-i", "pipe:0",  # stdin
-        "-i", x['audio_path'],
-        # "-vcodec", "libx264",
-        "-pix_fmt", "yuv420p",  # because iphone, see https://trac.ffmpeg.org/wiki/Encode/H.264#Encodingfordumbplayers
-        # "-preset", "ultrafast",
-        return_path,
-    ]  # fmt:skip
-    print("\t$ " + " ".join(cmd_args))
-    ffproc = subprocess.Popen(cmd_args, stdin=subprocess.PIPE)
+    ffproc = None
 
-    i = 0
     frame_num = x["frame_num"]
     for batch in make_animation(
         source_image,
@@ -334,8 +348,7 @@ def animate_from_coeff_generate(
         roll_c_seq,
     ):
         for out_image in batch:
-            i += 1
-            if i > frame_num:
+            if response.output.num_frames >= frame_num:
                 break
             out_image = img_as_ubyte(
                 out_image.data.cpu().numpy().transpose([1, 2, 0]).astype(np.float32)
@@ -343,7 +356,9 @@ def animate_from_coeff_generate(
             out_image = cv2.resize(out_image, (frame_w, frame_h))
 
             if "full" in preprocess.lower():
-                input_image = input_frames[i % len(input_frames)]
+                input_image = input_frames[
+                    response.output.num_frames % len(input_frames)
+                ]
                 p = cv2.resize(out_image, (ox2 - ox1, oy2 - oy1))
                 mask = 255 * np.ones(p.shape, p.dtype)
                 location = ((ox1 + ox2) // 2, (oy1 + oy2) // 2)
@@ -356,56 +371,27 @@ def animate_from_coeff_generate(
                         "Failed to perform full preprocess. Please use the crop mode or try a different aspect ratio."
                     )
 
+            if ffproc is None:
+                response.output.width = out_image.shape[1]
+                response.output.height = out_image.shape[0]
+                ffproc = ffmpeg_get_writer_proc(
+                    width=response.output.width,
+                    height=response.output.height,
+                    output_path=return_path,
+                    fps=response.output.fps,
+                    audio_path=x["audio_path"],
+                )
             ffproc.stdin.write(out_image.tostring())
+            response.output.num_frames += 1
 
     ffproc.stdin.close()
     ffproc.wait()
 
-    return return_path
+    if response.output.num_frames:
+        response.output.duration_sec = response.output.num_frames / response.output.fps
+        response.output.codec_name = "h264"
 
-
-def read_video_frames(
-    input_path: str,
-) -> typing.Tuple[typing.List[np.ndarray], int, int]:
-    cmd_args = [
-        "ffprobe",
-        "-v", "quiet",
-        "-print_format", "json",
-        "-show_streams", input_path,
-        "-select_streams", "v:0",
-    ]  # fmt:skip
-    print("\t$ " + " ".join(cmd_args))
-    data = json.loads(subprocess.check_output(cmd_args, text=True))
-    if not data["streams"]:
-        raise ValueError("input video has no streams")
-    out_w, out_h = (
-        int(data["streams"][0]["width"]) // 2 * 2,
-        int(data["streams"][0]["height"]) // 2 * 2,
-    )
-
-    cmd_args = [
-        "ffmpeg",
-        "-i", input_path,
-        "-f", "rawvideo",
-        "-pix_fmt", "rgb24",
-        "-s", f"{out_w}x{out_h}",
-        "-r", "25",
-        "pipe:1",
-    ]  # fmt:skip
-    print("\t$ " + " ".join(cmd_args))
-    ffproc = subprocess.Popen(cmd_args, stdout=subprocess.PIPE)
-
-    input_frames = []
-    while True:
-        raw_image = ffproc.stdout.read(out_h * out_w * 3)
-        if not raw_image:
-            break
-        input_image = np.frombuffer(raw_image, dtype=np.uint8).reshape(
-            (out_h, out_w, 3)
-        )
-        input_frames.append(input_image)
-
-    return input_frames, out_w, out_h
+    return return_path, response
 
 
 def make_animation(

@@ -345,6 +345,24 @@ deployments:
       DIS_MODEL_IDS: |-
           isnet-general-use.pth
 
+  - name: "retro-gfpgan-esrgan"
+    image: *retroImg
+    autoscaling:
+      queueLength: 2
+      minReplicaCount: 3
+      maxReplicaCount: 10
+    limits:
+      memory: "24Gi"
+      cpu: "2"
+    env:
+      IMPORTS: |-
+          retro.u2net
+          retro.dis
+      GFPGAN_MODEL_IDS: |-
+          https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth
+      ESRGAN_MODEL_IDS: |-
+          https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
+
 
 ## Dependencies
 nfs-server-provisioner:

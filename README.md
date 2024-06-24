@@ -187,10 +187,10 @@ gooey-gpu also provides a small python helper library to make it easy to write c
    ```
    cpu_memory_limit = (cpu_memory_capacity / gpu_memory_capacity) * gpu_memory_limit
    ```
-   E.g. for an azure Standard_NC24ads_A100_v4 with 220Gi CPU memory and 80Gi GPU memory, and a diffusion model with a max GPU memory usage of 7Gib, the CPU memory limit would be:
+   E.g. for an azure Standard_NC24ads_A100_v4 with 216 Gib CPU memory and 80 Gib GPU memory, and a diffusion model with a max GPU memory usage of 7 Gib, the CPU memory limit would be:
    
    ```
-   (220 / 80) * 7 ~= 20Gi
+   (216 / 80) * 7 ~= 20Gi
    ```
    
    This helps us put multiple models in the same GPU and avoid CUDA OOM errors.

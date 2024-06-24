@@ -18,12 +18,14 @@ from tqdm import tqdm
 import gooey_gpu
 from api import PipelineInfo
 from celeryconfig import app, setup_queues
+from ffmpeg_util import ffprobe_video, InputOutputVideoMetadata
 from retro.Wav2Lip.models import Wav2Lip
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "Wav2Lip"))
 
 from retro.Wav2Lip import audio
 
+MAX_RES = 1920 * 1080
 mel_step_size = 16
 
 
@@ -106,6 +108,8 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
         with open(face_path, "wb") as f:
             f.write(r.content)
 
+        input_metadata = ffprobe_video(face_path)
+
         r = requests.get(inputs.audio, allow_redirects=True)
         r.raise_for_status()
         with open(audio_path, "wb") as f:
@@ -156,6 +160,10 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
                 # upload to given url
                 r = requests.put(url, headers={"Content-Type": "video/mp4"}, data=f)
                 r.raise_for_status()
+
+        return InputOutputVideoMetadata(
+            input=input_metadata, output=ffprobe_video(result_path)
+        )
 
 
 def main(model, detector, outfile: str, inputs: Wav2LipInputs):
@@ -279,9 +287,9 @@ def read_n_frames(
 
 
 def resize_frame(frame, out_height: int) -> np.ndarray:
-    if frame.shape[0] * frame.shape[1] > 1920 * 1080:
+    if frame.shape[0] * frame.shape[1] > MAX_RES:
         raise ValueError(
-            "Input video resolution exceeds 1920x1080. Please downscale to 1080p"
+            "Input video resolution exceeds 1920x1080. Please downscale to 1080p."
         )
     aspect_ratio = frame.shape[1] / frame.shape[0]
     out_width = int(out_height * aspect_ratio)

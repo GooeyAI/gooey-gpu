@@ -230,3 +230,12 @@ def upload_video_from_bytes(video, url: str):
 
 # Add some missing mimetypes
 mimetypes.add_type("audio/wav", ".wav")
+
+
+def download_file_cached(*, url: str, path: str):
+    if os.path.exists(path):
+        return
+    r = requests.get(url)
+    r.raise_for_status()
+    with open(path, "wb") as f:
+        f.write(r.content)

@@ -1,4 +1,5 @@
 import os
+import traceback
 import typing
 
 from celery import Celery
@@ -34,7 +35,11 @@ def setup_queues(
 ):
     def init(**kwargs):
         for model_id in model_ids:
-            load_fn(model_id)
+            try:
+                load_fn(model_id)
+            except Exception as e:
+                traceback.print_exc()
+                raise
 
     init_fns.append(init)
 
