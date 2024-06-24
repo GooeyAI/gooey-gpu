@@ -346,7 +346,7 @@ deployments:
           isnet-general-use.pth
 
   - name: "retro-gfpgan-esrgan"
-    image: *retroImg
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:7"
     autoscaling:
       queueLength: 2
       minReplicaCount: 3
