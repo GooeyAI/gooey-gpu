@@ -43,7 +43,7 @@ deployments:
   - name: "common-diffusion-dreamshaper"
     image: *commonImg
     limits:
-      memory: "20Gi"
+      memory: "35Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -55,7 +55,7 @@ deployments:
   - name: "common-diffusion-stable-diffusion-2-1"
     image: *commonImg
     limits:
-      memory: "20Gi"
+      memory: "35Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -67,7 +67,7 @@ deployments:
   - name: "common-diffusion-dreamlike-photoreal-2"
     image: *commonImg
     limits:
-      memory: "20Gi"
+      memory: "35Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -79,7 +79,7 @@ deployments:
   - name: "common-diffusion-stable-diffusion-v1-5"
     image: *commonImg
     limits:
-      memory: "20Gi"
+      memory: "35Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -92,7 +92,7 @@ deployments:
   - name: "common-diffusion-on-demand"
     image: *commonImg
     limits:
-      memory: "37Gi"
+      memory: "50Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -108,7 +108,7 @@ deployments:
   - name: "common-diffusion-inpaint"
     image: *commonImg
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -125,7 +125,7 @@ deployments:
       minReplicaCount: 2
       maxReplicaCount: 12
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -140,7 +140,7 @@ deployments:
       minReplicaCount: 1
       maxReplicaCount: 3
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -151,7 +151,7 @@ deployments:
   - name: "common-whisper-en-short"
     image: *commonImg
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       QUEUE_PREFIX: "gooey-gpu/short"
@@ -163,7 +163,7 @@ deployments:
   - name: "common-whisper-te-short"
     image: *commonImg
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       QUEUE_PREFIX: "gooey-gpu/short"
@@ -175,7 +175,7 @@ deployments:
   - name: "retro-nemo-asr"
     image: *retroImg
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -187,7 +187,7 @@ deployments:
   - name: "common-audio-ldm-bark"
     image: *commonImg
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -203,7 +203,7 @@ deployments:
   - name: "common-seamless"
     image: *commonImg
     limits:
-      memory: "19Gi"
+      memory: "20Gi"
       cpu: "1"
     env:
       IMPORTS: |-
@@ -215,7 +215,7 @@ deployments:
   - name: "common-diffusion-instruct-pix2pix"
     image: *commonImg
     limits:
-      memory: "11Gi"
+      memory: "12Gi"
       cpu: "1"
     env:
       IMPORTS: |-
