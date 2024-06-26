@@ -21,6 +21,7 @@ autoscaling:
     - DEFORUM_MODEL_IDS
     - GFPGAN_MODEL_IDS
     - ESRGAN_MODEL_IDS
+    - LLM_MODEL_IDS
 
 controlnetModelIds: &controlnetModelIds |-
     lllyasviel/sd-controlnet-canny
@@ -364,6 +365,16 @@ deployments:
       ESRGAN_MODEL_IDS: |-
         RealESRGAN_x2plus
 
+  - name: "common-llms-sealion"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:4"
+    limits:
+      memory: "45Gi"
+      cpu: "2"
+    env:
+      IMPORTS: |-
+        common.llms
+      LLM_MODEL_IDS: |-
+        aisingapore/sea-lion-7b-instruct
 
 ## Dependencies
 nfs-server-provisioner:

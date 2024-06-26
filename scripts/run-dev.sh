@@ -70,6 +70,9 @@ docker run \
   -e ESRGAN_MODEL_IDS="
     RealESRGAN_x2plus
   "\
+  -e LLM_MODEL_IDS="
+    aisingapore/sea-lion-7b-instruct
+  "\
   -e C_FORCE_ROOT=1 \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \
   -e RESULT_BACKEND=${RESULT_BACKEND:-"redis://"} \
@@ -79,6 +82,6 @@ docker run \
   -v $HOME/.cache/huggingface:/root/.cache/huggingface \
   -v $HOME/.cache/torch:/root/.cache/torch \
   --net host --runtime=nvidia --gpus all \
-  --memory 14g \
+  --memory 80g \
   -it --rm --name $IMG \
   $IMG:latest

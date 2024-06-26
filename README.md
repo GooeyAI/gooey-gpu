@@ -177,7 +177,7 @@ gooey-gpu also provides a small python helper library to make it easy to write c
    print(result.get())  # { "image": "..." }
    ```
 
-9. During this, try to record the GPU usage using `nvidia-smi`. 
+9. During this, try to record the GPU usage using [`nvitop`](https://github.com/XuehaiPan/nvitop) (or `nvidia-smi`) 
  
    This will come handy to define the resource limits in the helm chart.
    Once you have this number, you need to convert this to the equivalent CPU memory limit. 
