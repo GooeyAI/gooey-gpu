@@ -366,7 +366,7 @@ deployments:
         RealESRGAN_x2plus
 
   - name: "common-llms-sealion"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:4"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:5"
     limits:
       memory: "45Gi"
       cpu: "2"

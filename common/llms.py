@@ -41,7 +41,7 @@ def llm_chat(pipeline: PipelineInfo, inputs: LLMChatInputs) -> LLMChatOutput:
         repetition_penalty=inputs.repetition_penalty,
         tokenizer=pipe.tokenizer,
         do_sample=True,
-        return_tensors=True,
+        eos_token_id=pipe.tokenizer.eos_token_id,
     )[0]
 
 
@@ -80,13 +80,12 @@ def load_pipe(model_id: str):
                 prompt_length = prompt_tokens = 0
             else:
                 prompt_tokens = len(input_ids[0])
-                prompt_length = len(
-                    pipe.tokenizer.decode(
-                        input_ids[0],
-                        skip_special_tokens=True,
-                        clean_up_tokenization_spaces=clean_up_tokenization_spaces,
-                    )
+                prompt = pipe.tokenizer.decode(
+                    input_ids[0],
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 )
+                prompt_length = len(prompt)
 
             records.append(
                 {
