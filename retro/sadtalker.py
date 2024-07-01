@@ -5,7 +5,8 @@ import sys
 import typing
 from functools import lru_cache
 from tempfile import TemporaryDirectory
-from urllib.request import urlretrieve
+import requests
+import random
 
 import cv2
 import numpy as np
@@ -29,6 +30,7 @@ sys.path.append(sadtalker_lib_path)
 
 from src.facerender.animate import AnimateFromCoeff
 from src.generate_batch import get_data
+from src import generate_batch as gb
 from src.generate_facerender_batch import get_facerender_data
 from src.test_audio2coeff import Audio2Coeff
 from src.utils.init_path import init_path
@@ -37,6 +39,44 @@ from src.facerender.modules.make_animation import keypoint_transformation
 
 
 MAX_RES = 1920 * 1080
+
+
+# the original sadtalker function does not work for short audio
+def fixed_generate_blink_seq_randomly(num_frames):
+    ratio = np.zeros((num_frames, 1))
+    if int(num_frames / 2) <= 11:
+        return ratio
+    frame_id = 0
+    while frame_id in range(num_frames):
+        start = random.choice(range(min(10, num_frames), min(int(num_frames / 2), 70)))
+        if frame_id + start + 5 <= num_frames - 1:
+            ratio[frame_id + start : frame_id + start + 5, 0] = [
+                0.5,
+                0.9,
+                1.0,
+                0.9,
+                0.5,
+            ]
+            frame_id = frame_id + start + 5
+        else:
+            break
+    return ratio
+
+
+# so we patch in a fixed version
+gb.generate_blink_seq_randomly = fixed_generate_blink_seq_randomly
+
+
+def urlretrieve(url, filename):
+    """Same as urllib.urlretrieve but uses requests because urllib breaks on discord attachments. Does not support data: URLs and local files."""
+    res = requests.get(url)
+    if not res.ok:
+        raise ValueError(
+            f"Could not access user provided url: {url} ({res.status_code} {res.reason}"
+        )
+    with open(filename, "wb") as f:
+        f.write(res.content)
+    return filename, None
 
 
 class SadtalkerPipeline(BaseModel):
@@ -123,11 +163,11 @@ def sadtalker(
 ) -> InputOutputVideoMetadata:
     assert len(pipeline.upload_urls) == 1, "Expected exactly 1 upload url"
 
-    face_mime_type = mimetypes.guess_type(inputs.source_image)[0] or ""
+    face_mime_type = mimetypes.guess_type(inputs.source_image.split("?")[0])[0] or ""
     if not ("video/" in face_mime_type or "image/" in face_mime_type):
         raise ValueError(f"Unsupported face format {face_mime_type!r}")
 
-    audio_mime_type = mimetypes.guess_type(inputs.driven_audio)[0] or ""
+    audio_mime_type = mimetypes.guess_type(inputs.driven_audio.split("?")[0])[0] or ""
     if not ("audio/" in audio_mime_type or "video/" in audio_mime_type):
         raise ValueError(f"Unsupported audio format {audio_mime_type!r}")
 
@@ -136,6 +176,26 @@ def sadtalker(
             inputs.source_image,
             os.path.join(save_dir, "face" + os.path.splitext(inputs.source_image)[1]),
         )
+        # convert image to jpg (to remove transparency) and make smaller than MAX_RES
+        if face_mime_type.startswith("image/"):
+            args = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                input_path,
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
+                "-q:v",
+                "1",
+                "-frames:v",
+                "1",
+                "-pix_fmt",
+                "yuv420p",
+                os.path.splitext(input_path)[0] + ".jpg",
+            ]
+            subprocess.check_output(args, encoding="utf-8")
+            input_path = os.path.splitext(input_path)[0] + ".jpg"
+
         audio_path, _ = urlretrieve(
             inputs.driven_audio,
             os.path.join(save_dir, "audio" + os.path.splitext(inputs.driven_audio)[1]),
@@ -151,6 +211,24 @@ def sadtalker(
             print("\t$ " + " ".join(args))
             print(subprocess.check_output(args, encoding="utf-8"))
             audio_path = wav_audio_path
+        # make sure audio is not 0 seconds
+        audio_length = float(
+            subprocess.check_output(
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "format=duration",
+                    "-of",
+                    "default=noprint_wrappers=1:nokey=1",
+                    audio_path,
+                ],
+                encoding="utf-8",
+            )
+        )
+        if audio_length <= 0.1:
+            raise ValueError("Audio is too short")
 
         response = InputOutputVideoMetadata(
             input=ffprobe_video(input_path), output=VideoMetadata()
@@ -167,13 +245,22 @@ def sadtalker(
         # crop image and extract 3dmm from image
         first_frame_dir = os.path.join(save_dir, "first_frame_dir")
         os.makedirs(first_frame_dir, exist_ok=True)
-        first_coeff_path, crop_pic_path, crop_info = preprocess_model.generate(
-            input_path,
-            first_frame_dir,
-            pipeline.preprocess,
-            source_image_flag=True,
-            pic_size=pipeline.size,
-        )
+        try:
+            first_coeff_path, crop_pic_path, crop_info = preprocess_model.generate(
+                input_path,
+                first_frame_dir,
+                pipeline.preprocess,
+                source_image_flag=True,
+                pic_size=pipeline.size,
+            )
+        except Exception as e:
+            if face_mime_type.startswith("video/"):
+                raise ValueError(
+                    "Could not identify the face in the video. Wav2Lip generally works better with videos."
+                ) from e
+            raise ValueError(
+                "Could not identify the face in the image. Please try another image. Humanoid faces and solid backgrounds work best.",
+            ) from e
         if first_coeff_path is None:
             raise ValueError("Can't get the coeffs of the input")
 
