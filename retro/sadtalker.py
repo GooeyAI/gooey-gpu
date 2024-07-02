@@ -74,6 +74,7 @@ class SadtalkerInput(BaseModel):
     still: bool = (
         False  # can crop back to the original videos for the full body aniamtion
     )
+    truncate_to_seconds: float = None  # truncate the video to seconds
 
 
 try:
@@ -151,6 +152,19 @@ def sadtalker(
             print("\t$ " + " ".join(args))
             print(subprocess.check_output(args, encoding="utf-8"))
             audio_path = wav_audio_path
+        if inputs.truncate_to_seconds:
+            args = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                audio_path,
+                "-t",
+                str(inputs.truncate_to_seconds),
+                audio_path + ".truncated.wav",
+            ]
+            print("\t$ " + " ".join(args))
+            print(subprocess.check_output(args, encoding="utf-8"))
+            audio_path += ".truncated.wav"
 
         response = InputOutputVideoMetadata(
             input=ffprobe_video(input_path), output=VideoMetadata()

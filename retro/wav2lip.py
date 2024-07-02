@@ -83,6 +83,7 @@ class Wav2LipInputs(BaseModel):
         default=480,
     )
     batch_size: int = 256
+    truncate_to_seconds: float = None
 
 
 @app.task(name="wav2lip")
@@ -126,6 +127,20 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
             print("\t$ " + " ".join(args))
             print(subprocess.check_output(args, encoding="utf-8"))
             audio_path = wav_audio_path
+
+        if inputs.truncate_to_seconds:
+            args = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                audio_path,
+                "-t",
+                str(inputs.truncate_to_seconds),
+                audio_path + ".truncated.wav",
+            ]
+            print("\t$ " + " ".join(args))
+            print(subprocess.check_output(args, encoding="utf-8"))
+            audio_path += ".truncated.wav"
 
         inputs.face = face_path
         inputs.audio = audio_path
