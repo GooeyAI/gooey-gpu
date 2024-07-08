@@ -3,7 +3,7 @@
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
+  name: "{{ $.Release.Name }}-keda-auth-rabbitmq-1"
   namespace: "{{ $.Values.namespace }}"
 spec:
   env:
@@ -38,7 +38,7 @@ spec:
         mode: QueueLength
         value: "{{ $autoscaling.queueLength | default $.Values.autoscaling.queueLength }}"
       authenticationRef:
-        name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
+        name: "{{ $.Release.Name }}-keda-auth-rabbitmq-1"
     {{- end }}
     {{- end }}
 {{- end }}

@@ -322,7 +322,7 @@ deployments:
     image: *retroImg
     autoscaling:
       minReplicaCount: 2
-      maxReplicaCount: 5
+      maxReplicaCount: 10
     limits:
       memory: "37Gi"
       cpu: "2"
