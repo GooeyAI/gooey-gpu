@@ -21,6 +21,27 @@ class InputOutputVideoMetadata(BaseModel):
     output: VideoMetadata
 
 
+class AudioMetadata(BaseModel):
+    duration_sec: float = 0
+
+
+def ffprobe_audio(input_path: str) -> AudioMetadata:
+    cmd_args = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        input_path,
+    ]
+    print("\t$ " + " ".join(cmd_args))
+    return AudioMetadata(
+        duration_sec=float(subprocess.check_output(cmd_args, encoding="utf-8"))
+    )
+
+
 def ffprobe_video(input_path: str) -> VideoMetadata:
     cmd_args = [
         "ffprobe",

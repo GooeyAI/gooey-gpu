@@ -19,6 +19,7 @@ import gooey_gpu
 from celeryconfig import app, setup_queues
 from ffmpeg_util import (
     ffprobe_video,
+    ffprobe_audio,
     ffmpeg_read_input_frames,
     VideoMetadata,
     ffmpeg_get_writer_proc,
@@ -219,21 +220,7 @@ def sadtalker(
             print(subprocess.check_output(args, encoding="utf-8"))
             audio_path = wav_audio_path
         # make sure audio is not 0 seconds
-        audio_length = float(
-            subprocess.check_output(
-                [
-                    "ffprobe",
-                    "-v",
-                    "error",
-                    "-show_entries",
-                    "format=duration",
-                    "-of",
-                    "default=noprint_wrappers=1:nokey=1",
-                    audio_path,
-                ],
-                encoding="utf-8",
-            )
-        )
+        audio_length = ffprobe_audio(audio_path).duration_sec
         if audio_length <= 0.1:
             raise ValueError("Audio is too short")
 
