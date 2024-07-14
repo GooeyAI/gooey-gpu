@@ -58,10 +58,7 @@ gb.generate_blink_seq_randomly = fixed_generate_blink_seq_randomly
 def urlretrieve(url, filename):
     """Same as urllib.urlretrieve but uses requests because urllib breaks on discord attachments. Does not support data: URLs and local files."""
     res = requests.get(url)
-    if not res.ok:
-        raise ValueError(
-            f"Could not access user provided url: {url} ({res.status_code} {res.reason}"
-        )
+    res.raise_for_status()
     with open(filename, "wb") as f:
         f.write(res.content)
     return filename, None
