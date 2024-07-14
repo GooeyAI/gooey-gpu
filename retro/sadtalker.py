@@ -166,6 +166,26 @@ def sadtalker(
             inputs.source_image,
             os.path.join(save_dir, "face" + os.path.splitext(inputs.source_image)[1]),
         )
+        # convert video to jpg (choose the middle frame) to fix oom error when sadtalker tries to load a large video into memory
+        if face_mime_type.startswith("video/"):
+            ffprobe = ffprobe_video(input_path)
+            duration_sec = ffprobe.duration_sec
+            args = [
+                "ffmpeg",
+                "-y",
+                "-ss",  # select the middle frame
+                str(duration_sec / 2),  # select the middle frame
+                "-i",
+                input_path,
+                "-q:v",
+                "1",
+                "-frames:v",
+                "1",
+                os.path.splitext(input_path)[0] + ".jpg",
+            ]
+            subprocess.check_output(args, encoding="utf-8")
+            input_path = os.path.splitext(input_path)[0] + ".jpg"
+            face_mime_type = "image/jpeg"
         # convert image to jpg (to remove transparency) and make smaller than MAX_RES
         if face_mime_type.startswith("image/"):
             args = [
