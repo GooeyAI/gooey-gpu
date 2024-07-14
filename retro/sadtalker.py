@@ -40,27 +40,15 @@ from src.facerender.modules.make_animation import keypoint_transformation
 
 MAX_RES = 1920 * 1080
 
+old_generate_blink_seq_randomly = gb.generate_blink_seq_randomly
+
 
 # the original sadtalker function does not work for short audio
 def fixed_generate_blink_seq_randomly(num_frames):
     ratio = np.zeros((num_frames, 1))
     if int(num_frames / 2) <= 11:
         return ratio
-    frame_id = 0
-    while frame_id in range(num_frames):
-        start = random.choice(range(min(10, num_frames), min(int(num_frames / 2), 70)))
-        if frame_id + start + 5 <= num_frames - 1:
-            ratio[frame_id + start : frame_id + start + 5, 0] = [
-                0.5,
-                0.9,
-                1.0,
-                0.9,
-                0.5,
-            ]
-            frame_id = frame_id + start + 5
-        else:
-            break
-    return ratio
+    return old_generate_blink_seq_randomly(num_frames)
 
 
 # so we patch in a fixed version
