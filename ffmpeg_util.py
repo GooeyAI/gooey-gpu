@@ -6,6 +6,8 @@ from fractions import Fraction
 import numpy as np
 from pydantic import BaseModel
 
+from exceptions import UserError
+
 
 class VideoMetadata(BaseModel):
     width: int = 0
@@ -23,40 +25,48 @@ class InputOutputVideoMetadata(BaseModel):
 
 class AudioMetadata(BaseModel):
     duration_sec: float = 0
+    codec_name: typing.Optional[str] = None
 
 
 def ffprobe_audio(input_path: str) -> AudioMetadata:
-    cmd_args = [
+    text = call_cmd(
         "ffprobe",
-        "-v",
-        "error",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
-        input_path,
-    ]
-    print("\t$ " + " ".join(cmd_args))
+        "-v", "quiet",
+        "-print_format", "json",
+        "-show_streams", input_path,
+        "-select_streams", "a:0",
+    )  # fmt:skip
+    data = json.loads(text)
+
+    try:
+        stream = data["streams"][0]
+    except IndexError:
+        raise UserError(
+            "Input has no audio streams. Make sure the you have uploaded an appropriate audio/video file."
+        )
+
     return AudioMetadata(
-        duration_sec=float(subprocess.check_output(cmd_args, encoding="utf-8"))
+        duration_sec=float(stream.get("duration") or 0),
+        codec_name=stream.get("codec_name"),
     )
 
 
 def ffprobe_video(input_path: str) -> VideoMetadata:
-    cmd_args = [
+    text = call_cmd(
         "ffprobe",
         "-v", "quiet",
         "-print_format", "json",
         "-show_streams", input_path,
         "-select_streams", "v:0",
-    ]  # fmt:skip
-    print("\t$ " + " ".join(cmd_args))
-    data = json.loads(subprocess.check_output(cmd_args, text=True))
+    )  # fmt:skip
+    data = json.loads(text)
 
     try:
         stream = data["streams"][0]
     except IndexError:
-        raise ValueError("input has no video streams")
+        raise UserError(
+            "Input has no video streams. Make sure the video you have uploaded is not corrupted."
+        )
 
     try:
         fps = float(Fraction(stream["avg_frame_rate"]))
@@ -120,3 +130,30 @@ def ffmpeg_get_writer_proc(
     ]  # fmt:skip
     print("\t$ " + " ".join(cmd_args))
     return subprocess.Popen(cmd_args, stdin=subprocess.PIPE)
+
+
+FFMPEG_ERR_MSG = (
+    "Unsupported File Format\n\n"
+    "We encountered an issue processing your file as it appears to be in a format not supported by our system or may be corrupted. "
+    "You can find a list of supported formats at [FFmpeg Formats](https://ffmpeg.org/general.html#File-Formats)."
+)
+
+
+def ffmpeg(*args) -> str:
+    return call_cmd("ffmpeg", "-hide_banner", "-y", *args, err_msg=FFMPEG_ERR_MSG)
+
+
+def call_cmd(
+    *args, err_msg: str = "", ok_returncodes: typing.Iterable[int] = ()
+) -> str:
+    print("\t$ " + " ".join(map(str, args)))
+    try:
+        return subprocess.check_output(args, stderr=subprocess.STDOUT, text=True)
+    except subprocess.CalledProcessError as e:
+        if e.returncode in ok_returncodes:
+            return e.output
+        err_msg = err_msg or f"{str(args[0]).capitalize()} Error"
+        try:
+            raise subprocess.SubprocessError(e.output) from e
+        except subprocess.SubprocessError as e:
+            raise UserError(err_msg) from e

@@ -3,7 +3,6 @@ import os
 import typing
 from functools import lru_cache
 from tempfile import TemporaryDirectory
-from urllib.request import urlretrieve
 
 import PIL.Image
 from basicsr.archs.rrdbnet_arch import RRDBNet
@@ -14,13 +13,6 @@ from tqdm import tqdm
 
 import gooey_gpu
 from celeryconfig import app, setup_queues
-from ffmpeg_util import (
-    ffmpeg_get_writer_proc,
-    ffmpeg_read_input_frames,
-    ffprobe_video,
-    VideoMetadata,
-    InputOutputVideoMetadata,
-)
 
 MAX_RES = 1920 * 1080
 
@@ -40,7 +32,7 @@ class EsrganInputs(BaseModel):
 @gooey_gpu.endpoint
 def realesrgan(
     pipeline: EsrganPipeline, inputs: EsrganInputs
-) -> InputOutputVideoMetadata:
+) -> gooey_gpu.InputOutputVideoMetadata:
     esrganer = load_esrgan_model(pipeline.model_id)
 
     def enhance(frame, outscale_factor):
@@ -71,7 +63,9 @@ class GfpganInputs(BaseModel):
 
 @app.task(name="gfpgan")
 @gooey_gpu.endpoint
-def gfpgan(pipeline: GfpganPipeline, inputs: GfpganInputs) -> InputOutputVideoMetadata:
+def gfpgan(
+    pipeline: GfpganPipeline, inputs: GfpganInputs
+) -> gooey_gpu.InputOutputVideoMetadata:
     gfpganer = load_gfpgan_model(pipeline.model_id)
     if pipeline.bg_model_id:
         gfpganer.bg_upsampler = load_esrgan_model(pipeline.bg_model_id)
@@ -102,24 +96,22 @@ def run_enhancer(
     scale: float,
     upload_url: str,
     enhance: typing.Callable,
-) -> InputOutputVideoMetadata:
-    input_file = image or video
-    assert input_file, "Please provide an image or video input"
+) -> gooey_gpu.InputOutputVideoMetadata:
+    input_url = image or video
+    assert input_url, "Please provide an image or video input"
 
     with TemporaryDirectory() as save_dir:
-        input_path, _ = urlretrieve(
-            input_file,
-            os.path.join(save_dir, "input" + os.path.splitext(input_file)[1]),
-        )
+        input_path = os.path.join(save_dir, "input" + os.path.splitext(input_url)[1])
+        gooey_gpu.download_file_to_path(url=input_url, path=input_path)
         output_path = os.path.join(save_dir, "out.mp4")
 
-        response = InputOutputVideoMetadata(
-            input=ffprobe_video(input_path), output=VideoMetadata()
+        response = gooey_gpu.InputOutputVideoMetadata(
+            input=gooey_gpu.ffprobe_video(input_path), output=gooey_gpu.VideoMetadata()
         )
         # ensure max input/output is 1080p
         input_pixels = response.input.width * response.input.height
         if input_pixels > MAX_RES:
-            raise ValueError(
+            raise gooey_gpu.UserError(
                 "Input video resolution exceeds 1920x1080. Please downscale to 1080p."
             )
         max_scale = math.sqrt(MAX_RES / input_pixels)
@@ -128,7 +120,7 @@ def run_enhancer(
 
         ffproc = None
         for frame in tqdm(
-            ffmpeg_read_input_frames(
+            gooey_gpu.ffmpeg_read_input_frames(
                 width=response.input.width,
                 height=response.input.height,
                 input_path=input_path,
@@ -152,7 +144,7 @@ def run_enhancer(
                 response.output.width = restored_img.shape[1]
                 response.output.height = restored_img.shape[0]
                 response.output.fps = response.input.fps or 24
-                ffproc = ffmpeg_get_writer_proc(
+                ffproc = gooey_gpu.ffmpeg_get_writer_proc(
                     width=response.output.width,
                     height=response.output.height,
                     fps=response.output.fps,
@@ -214,7 +206,7 @@ def load_gfpgan_model(model_id: str) -> "GFPGANer":
 
     print(f"loading {model_id} via {url}...")
     model_path = os.path.join(gfpgan_checkpoint_dir, os.path.basename(url))
-    gooey_gpu.download_file_cached(url=url, path=model_path)
+    gooey_gpu.download_file_to_path(url=url, path=model_path, cached=True)
 
     return GFPGANer(
         model_path=model_path,
@@ -282,7 +274,7 @@ def load_esrgan_model(model_id: str) -> "RealESRGANer":
     for url in file_url:
         print(f"loading {model_id} via {url}...")
         model_path = os.path.join(gooey_gpu.CHECKPOINTS_DIR, os.path.basename(url))
-        gooey_gpu.download_file_cached(url=url, path=model_path)
+        gooey_gpu.download_file_to_path(url=url, path=model_path, cached=True)
     assert model_path, f"Model {model_id} not found"
 
     return RealESRGANer(

@@ -18,7 +18,6 @@ from tqdm import tqdm
 import gooey_gpu
 from api import PipelineInfo
 from celeryconfig import app, setup_queues
-from ffmpeg_util import ffprobe_video, InputOutputVideoMetadata
 from retro.Wav2Lip.models import Wav2Lip
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "Wav2Lip"))
@@ -88,58 +87,43 @@ class Wav2LipInputs(BaseModel):
 @app.task(name="wav2lip")
 @gooey_gpu.endpoint
 def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
-    face_mime_type = mimetypes.guess_type(inputs.face)[0] or ""
-    if not ("video/" in face_mime_type or "image/" in face_mime_type):
-        raise ValueError(f"Unsupported face format {face_mime_type!r}")
-
-    audio_mime_type = mimetypes.guess_type(inputs.audio)[0] or ""
-    if not ("audio/" in audio_mime_type or "video/" in audio_mime_type):
-        raise ValueError(f"Unsupported audio format {audio_mime_type!r}")
-
     model, detector = load_models(pipeline.model_id)
 
     with TemporaryDirectory() as tmpdir:
-        face_path = os.path.join(tmpdir, "face" + os.path.splitext(inputs.face)[1])
-        audio_path = os.path.join(tmpdir, "audio" + os.path.splitext(inputs.audio)[1])
-        result_path = os.path.join(tmpdir, "result_voice.mp4")
-
-        r = requests.get(inputs.face, allow_redirects=True)
-        r.raise_for_status()
-        with open(face_path, "wb") as f:
-            f.write(r.content)
-
-        input_metadata = ffprobe_video(face_path)
-
-        r = requests.get(inputs.audio, allow_redirects=True)
-        r.raise_for_status()
-        with open(audio_path, "wb") as f:
-            f.write(r.content)
-
-        if audio_mime_type != "audio/wav":
+        audio_ext = os.path.splitext(inputs.audio)[1]
+        audio_path = os.path.join(tmpdir, "audio" + audio_ext)
+        gooey_gpu.download_file_to_path(url=inputs.audio, path=audio_path)
+        input_audio_metadata = gooey_gpu.ffprobe_audio(audio_path)
+        # make sure audio is not 0 seconds
+        if input_audio_metadata.duration_sec <= 0.1:
+            raise gooey_gpu.UserError("Audio is too short")
+        # convert audio to wav
+        if input_audio_metadata.codec_name != "pcm_s16le":
             wav_audio_path = audio_path + ".wav"
-            args = [
-                "ffmpeg", "-y",
+            gooey_gpu.ffmpeg(
                 "-i", audio_path,
                 "-vn", "-acodec", "pcm_s16le", "-ac", "1", "-ar", "16000",
                 wav_audio_path,
-            ]  # fmt:skip
-            print("\t$ " + " ".join(args))
-            print(subprocess.check_output(args, encoding="utf-8"))
+            )  # fmt:skip
             audio_path = wav_audio_path
 
-        inputs.face = face_path
+        video_ext = os.path.splitext(inputs.face)[1]
+        video_path = os.path.join(tmpdir, "video" + video_ext)
+        gooey_gpu.download_file_to_path(url=inputs.face, path=video_path)
+        input_video_metadata = gooey_gpu.ffprobe_video(video_path)
+
         inputs.audio = audio_path
+        inputs.face = video_path
+        result_path = os.path.join(tmpdir, "result_voice.mp4")
 
         try:
             main(model=model, detector=detector, outfile=result_path, inputs=inputs)
         except FaceNotFoundException as e:
             print(f"-> Encountered error, skipping lipsync: {e}")
-            args = [
-                "ffmpeg",
-                "-y",
+            gooey_gpu.ffmpeg(
                 # "-vsync", "0", "-hwaccel", "cuda", "-hwaccel_output_format", "cuda",
                 "-stream_loop", "-1",
-                "-i", face_path,
+                "-i", video_path,
                 "-i", audio_path,
                 "-shortest",
                 "-fflags", "+shortest",
@@ -150,19 +134,16 @@ def wav2lip(pipeline: PipelineInfo, inputs: Wav2LipInputs):
                 # "-c", "copy",
                 # "-c:v", "h264_nvenc",
                 result_path,
-            ]  # fmt:skip
-            args = list(map(str, args))
-            print("\t$ " + " ".join(args))
-            print(subprocess.check_output(args, encoding="utf-8"))
+            )  # fmt:skip
 
         with open(result_path, "rb") as f:
             for url in pipeline.upload_urls:
                 # upload to given url
                 r = requests.put(url, headers={"Content-Type": "video/mp4"}, data=f)
-                r.raise_for_status()
+                gooey_gpu.raise_for_status(r)
 
-        return InputOutputVideoMetadata(
-            input=input_metadata, output=ffprobe_video(result_path)
+        return gooey_gpu.InputOutputVideoMetadata(
+            input=input_video_metadata, output=gooey_gpu.ffprobe_video(result_path)
         )
 
 
@@ -203,8 +184,7 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
 
         if idx == 0:
             frame_h, frame_w = frame_batch[0].shape[:-1]
-            cmd_args = [
-                "ffmpeg",
+            gooey_gpu.ffmpeg(
                 # "-thread_queue_size", "128",
                 "-pixel_format", "bgr24", # to match opencv
                 "-f", "rawvideo",
@@ -217,9 +197,7 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
                 "-pix_fmt", "yuv420p", # because iphone, see https://trac.ffmpeg.org/wiki/Encode/H.264#Encodingfordumbplayers
                 # "-preset", "ultrafast",
                 outfile,
-            ]  # fmt:skip
-            print("\t$ " + " ".join(cmd_args))
-            ffproc = subprocess.Popen(cmd_args, stdin=subprocess.PIPE)
+            )  # fmt:skip
 
         mel_batch = mel_chunks[idx : idx + inputs.batch_size]
         frame_batch = frame_batch[: len(mel_batch)]
@@ -280,7 +258,7 @@ def read_n_frames(
             video_stream = cv2.VideoCapture(face)
             ret, frame = video_stream.read()
             if not ret:
-                raise ValueError("Video file contains no frames")
+                raise gooey_gpu.UserError("Video file contains no frames")
 
         frame = resize_frame(frame, out_height)
         yield frame
@@ -288,7 +266,7 @@ def read_n_frames(
 
 def resize_frame(frame, out_height: int) -> np.ndarray:
     if frame.shape[0] * frame.shape[1] > MAX_RES:
-        raise ValueError(
+        raise gooey_gpu.UserError(
             "Input video resolution exceeds 1920x1080. Please downscale to 1080p."
         )
     aspect_ratio = frame.shape[1] / frame.shape[0]

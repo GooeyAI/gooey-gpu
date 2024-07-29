@@ -379,9 +379,7 @@ def create_video(args: DeforumArgs, anim_args: DeforumAnimArgs):
                 max_frames = str(anim_args.max_frames)
 
         # make video
-        cmd = [
-            "ffmpeg",
-            "-y",
+        gooey_gpu.ffmpeg(
             "-vcodec",
             bitdepth_extension,
             "-r",
@@ -405,9 +403,7 @@ def create_video(args: DeforumArgs, anim_args: DeforumAnimArgs):
             "-pattern_type",
             "sequence",
             mp4_path,
-        ]
-        print(f"---> {' '.join(cmd)}")
-        subprocess.check_call(cmd)
+        )
         # process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # stdout, stderr = process.communicate()
         # if process.returncode != 0:
