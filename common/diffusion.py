@@ -179,7 +179,7 @@ def safety_checker_wrapper(pipe, disabled: bool):
         if not disabled:
             images, has_nsfw_concepts = original(images=images, clip_input=clip_input)
         if any(has_nsfw_concepts):
-            raise ValueError(
+            raise gooey_gpu.UserError(
                 "Potential NSFW content was detected in one or more images. "
                 "Try again with a different Prompt and/or Regenerate."
             )

@@ -30,7 +30,7 @@ def load_model(model_url: str):
     # get cached model path
     model_path = os.path.join(gooey_gpu.CHECKPOINTS_DIR, os.path.basename(model_url))
     # if not cached, download again
-    gooey_gpu.download_file_cached(url=model_url, path=model_path)
+    gooey_gpu.download_file_to_path(url=model_url, path=model_path, cached=True)
     # load model
     return nemo_asr.models.ASRModel.restore_from(model_path)
 
