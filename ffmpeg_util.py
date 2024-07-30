@@ -28,6 +28,13 @@ class AudioMetadata(BaseModel):
     codec_name: typing.Optional[str] = None
 
 
+FFMPEG_ERR_MSG = (
+    "Unsupported File Format\n\n"
+    "We encountered an issue processing your file as it appears to be in a format not supported by our system or may be corrupted. "
+    "You can find a list of supported formats at [FFmpeg Formats](https://ffmpeg.org/general.html#File-Formats)."
+)
+
+
 def ffprobe_audio(input_path: str) -> AudioMetadata:
     text = call_cmd(
         "ffprobe",
@@ -35,6 +42,7 @@ def ffprobe_audio(input_path: str) -> AudioMetadata:
         "-print_format", "json",
         "-show_streams", input_path,
         "-select_streams", "a:0",
+        err_msg=FFMPEG_ERR_MSG,
     )  # fmt:skip
     data = json.loads(text)
 
@@ -58,6 +66,7 @@ def ffprobe_video(input_path: str) -> VideoMetadata:
         "-print_format", "json",
         "-show_streams", input_path,
         "-select_streams", "v:0",
+        err_msg=FFMPEG_ERR_MSG,
     )  # fmt:skip
     data = json.loads(text)
 
@@ -130,13 +139,6 @@ def ffmpeg_get_writer_proc(
     ]  # fmt:skip
     print("\t$ " + " ".join(cmd_args))
     return subprocess.Popen(cmd_args, stdin=subprocess.PIPE)
-
-
-FFMPEG_ERR_MSG = (
-    "Unsupported File Format\n\n"
-    "We encountered an issue processing your file as it appears to be in a format not supported by our system or may be corrupted. "
-    "You can find a list of supported formats at [FFmpeg Formats](https://ffmpeg.org/general.html#File-Formats)."
-)
 
 
 def ffmpeg(*args) -> str:

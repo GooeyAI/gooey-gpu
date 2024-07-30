@@ -304,7 +304,7 @@ deployments:
         thenlper/gte-base
 
   - name: "retro-sadtalker"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:9"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:10"
     autoscaling:
       queueLength: 2
       minReplicaCount: 3
