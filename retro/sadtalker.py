@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 import gooey_gpu
 from celeryconfig import app, setup_queues
+from ffmpeg_util import ensure_img_even_dimensions
 
 sadtalker_lib_path = os.path.join(os.path.dirname(__file__), "SadTalker")
 sys.path.append(sadtalker_lib_path)
@@ -338,7 +339,7 @@ def animate_from_coeff_generate(
     video_name = x["video_name"] + ".mp4"
     return_path = str(os.path.join(video_save_dir, video_name))
 
-    img_size = int(img_size) // 2 * 2
+    img_size = int(img_size) // 2 * 2  # make sure its divisble by 2 for ffmpeg libx264
     original_size = crop_info[0]
     if original_size:
         frame_w, frame_h = (
@@ -413,6 +414,7 @@ def animate_from_coeff_generate(
                         "Please use the crop mode and make sure the input face is clear or try a different aspect ratio. "
                         "Humanoid faces and solid backgrounds work best."
                     ) from e
+                out_image = ensure_img_even_dimensions(out_image)
 
             if ffproc is None:
                 out_meta.width = out_image.shape[1]
@@ -424,7 +426,7 @@ def animate_from_coeff_generate(
                     fps=out_meta.fps,
                     audio_path=x["audio_path"],
                 )
-            ffproc.stdin.write(out_image.tostring())
+            gooey_gpu.ffmpeg_write_output_frame(ffproc, out_image)
             out_meta.num_frames += 1
 
     ffproc.stdin.close()

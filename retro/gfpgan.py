@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 import gooey_gpu
 from celeryconfig import app, setup_queues
+from ffmpeg_util import ensure_img_even_dimensions
 
 MAX_RES = 1920 * 1080
 
@@ -140,6 +141,7 @@ def run_enhancer(
                 response.output.codec_name = "png"
                 break
 
+            restored_img = ensure_img_even_dimensions(restored_img)
             if ffproc is None:
                 response.output.width = restored_img.shape[1]
                 response.output.height = restored_img.shape[0]
@@ -151,7 +153,7 @@ def run_enhancer(
                     output_path=output_path,
                     audio_path=input_path,
                 )
-            ffproc.stdin.write(restored_img.tostring())
+            gooey_gpu.ffmpeg_write_output_frame(ffproc, restored_img)
             response.output.num_frames += 1
 
         if ffproc is not None:

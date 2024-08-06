@@ -182,7 +182,7 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
                 )
             )
 
-        if idx == 0:
+        if ffproc is None:
             frame_h, frame_w = frame_batch[0].shape[:-1]
             gooey_gpu.ffmpeg(
                 # "-thread_queue_size", "128",
@@ -238,7 +238,7 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
 
             f[y1:y2, x1:x2] = p
             cv2.imwrite(f"{outfile}_{idx}.png", f)
-            ffproc.stdin.write(f.tostring())
+            gooey_gpu.ffmpeg_write_output_frame(ffproc, f)
 
     if input_stream:
         input_stream.release()
@@ -271,7 +271,7 @@ def resize_frame(frame, out_height: int) -> np.ndarray:
         )
     aspect_ratio = frame.shape[1] / frame.shape[0]
     out_width = int(out_height * aspect_ratio)
-    if out_width % 2 != 0:
+    if out_width % 2 != 0:  # make sure its divisble by 2 for ffmpeg libx264
         out_width -= 1
     frame = cv2.resize(frame, (out_width, out_height))
     return frame

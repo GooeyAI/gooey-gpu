@@ -107,9 +107,15 @@ def ffmpeg_read_input_frames(
         "pipe:1",
     ]  # fmt:skip
     print("\t$ " + " ".join(cmd_args))
-    ffproc = subprocess.Popen(cmd_args, stdout=subprocess.PIPE)
+    ffproc = subprocess.Popen(cmd_args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     while True:
+        retcode = ffproc.poll()
+        if retcode is not None:
+            output = ffproc.stderr.read().decode()
+            err = subprocess.SubprocessError(output)
+            err.__cause__ = subprocess.CalledProcessError(retcode, ffproc.args, output)
+            raise UserError(FFMPEG_ERR_MSG) from err
         im_bytes = ffproc.stdout.read(height * width * 3)
         if not im_bytes:
             break
@@ -138,7 +144,27 @@ def ffmpeg_get_writer_proc(
         output_path,
     ]  # fmt:skip
     print("\t$ " + " ".join(cmd_args))
-    return subprocess.Popen(cmd_args, stdin=subprocess.PIPE)
+    return subprocess.Popen(
+        cmd_args,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def ensure_img_even_dimensions(img: np.ndarray) -> np.ndarray:
+    """make sure the image dimensions are divisble by 2 for ffmpeg libx264"""
+    return img[: img.shape[0] // 2 * 2, : img.shape[1] // 2 * 2]
+
+
+def ffmpeg_write_output_frame(ffproc: subprocess.Popen, img: np.ndarray):
+    retcode = ffproc.poll()
+    if retcode is not None:
+        output = ffproc.stdout.read().decode()
+        err = subprocess.SubprocessError(output)
+        err.__cause__ = subprocess.CalledProcessError(retcode, ffproc.args, output)
+        raise UserError(FFMPEG_ERR_MSG) from err
+    ffproc.stdin.write(img.tostring())
 
 
 def ffmpeg(*args) -> str:
