@@ -12,46 +12,34 @@ from api import AsrOutput
 from celeryconfig import app, setup_queues
 
 
-class SeamlessM4TPipeline(BaseModel):
-    upload_urls: typing.List[str] = []
-    model_id: typing.Literal[
-        "facebook/hf-seamless-m4t-large", "facebook/hf-seamless-m4t-medium"
-    ] = "facebook/hf-seamless-m4t-large"
+class SeamlessASRPipeline(BaseModel):
+    model_id: str
 
 
-class SeamlessM4TInputs(BaseModel):
-    audio: str | None  # required for ASR, S2ST, and S2TT
-    text: str | None  # required for T2ST and T2TT
-    task: typing.Literal["S2ST", "T2ST", "S2TT", "T2TT", "ASR"] = "ASR"
-    src_lang: str | None = None  # required for T2ST and T2TT
-    tgt_lang: str | None = None  # ignored for ASR (only src_lang is used)
-    # seamless uses ISO 639-3 codes for languages
+class SeamlessASRInputs(BaseModel):
+    audio: str
+    src_lang: str
+    tgt_lang: str | None = None
 
     chunk_length_s: float = 30
     stride_length_s: typing.Tuple[float, float] = (6, 0)
     batch_size: int = 16
 
 
-class SeamlessM4TOutput(typing.TypedDict):
-    text: str | None
-    audio: str | None
-
-
-@app.task(name="seamless")
+@app.task(name="seamless.asr")
 @gooey_gpu.endpoint
 def seamless_asr(
-    pipeline: SeamlessM4TPipeline,
-    inputs: SeamlessM4TInputs,
+    pipeline: SeamlessASRPipeline,
+    inputs: SeamlessASRInputs,
 ) -> AsrOutput:
     audio = requests.get(inputs.audio).content
     pipe = load_pipe(pipeline.model_id)
 
-    previous_src_lang = None
+    previous_src_lang = pipe.tokenizer.src_lang
     if inputs.src_lang:
-        previous_src_lang = pipe.tokenizer.src_lang
         pipe.tokenizer.src_lang = inputs.src_lang
 
-    tgt_lang = inputs.tgt_lang or inputs.src_lang or "eng"
+    tgt_lang = inputs.tgt_lang or inputs.src_lang
 
     prediction = pipe(
         audio,
@@ -62,20 +50,22 @@ def seamless_asr(
         generate_kwargs=dict(tgt_lang=tgt_lang),
     )
 
-    if previous_src_lang:
-        pipe.tokenizer.src_lang = previous_src_lang
+    pipe.tokenizer.src_lang = previous_src_lang
 
     return prediction
 
 
 @lru_cache
-def load_pipe(model_id: str):
-    print(f"Loading asr model {model_id!r}...")
-    pipe = transformers.pipeline(
-        "automatic-speech-recognition",
-        model=model_id,
-        device=gooey_gpu.DEVICE_ID,
-        torch_dtype=torch.float16,
+def load_pipe(model_id: str) -> transformers.AutomaticSpeechRecognitionPipeline:
+    print(f"Loading seamless m4t pipeline {model_id!r}...")
+    pipe = typing.cast(
+        transformers.AutomaticSpeechRecognitionPipeline,
+        transformers.pipeline(
+            task="automatic-speech-recognition",
+            model=model_id,
+            device=gooey_gpu.DEVICE_ID,
+            torch_dtype=torch.float16,
+        ),
     )
     return pipe
 

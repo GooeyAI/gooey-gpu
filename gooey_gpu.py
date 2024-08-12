@@ -37,6 +37,17 @@ CHECKPOINTS_DIR = (
     or "/root/.cache/gooey-gpu/checkpoints"
 )
 
+try:
+    gpu_limit_gib = float(os.environ["RESOURCE_LIMITS_GPU"].removesuffix("Gi"))
+except (KeyError, ValueError):
+    print("RESOURCE_LIMITS_GPU environment variable not set to a valid value.")
+else:
+    total_mem_bytes = torch.cuda.mem_get_info()[1]
+    fraction = gpu_limit_gib * 1024**3 / total_mem_bytes
+    torch.cuda.set_per_process_memory_fraction(fraction)
+    print(f"GPU memory limit set to {gpu_limit_gib}Gi ({fraction:.2%})")
+
+
 if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,

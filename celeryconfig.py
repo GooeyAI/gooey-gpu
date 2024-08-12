@@ -3,6 +3,7 @@ import traceback
 import typing
 
 from celery import Celery
+from celery.exceptions import WorkerShutdown
 from celery.signals import worker_init
 from kombu import Queue
 
@@ -34,12 +35,15 @@ def setup_queues(
     queue_prefix: str = os.environ.get("QUEUE_PREFIX", "gooey-gpu"),
 ):
     def init(**kwargs):
-        for model_id in model_ids:
-            try:
+        model_id = None
+        try:
+            for model_id in model_ids:
                 load_fn(model_id)
-            except Exception as e:
-                traceback.print_exc()
-                raise
+        except:
+            # for some reason, celery seems to swallow exceptions in init
+            print(f"Error loading {model_id}:")
+            traceback.print_exc()
+            raise WorkerShutdown()
 
     init_fns.append(init)
 

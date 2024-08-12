@@ -61,6 +61,9 @@ docker run \
   -e U2NET_MODEL_IDS="
     u2net
   "\
+  -e SEAMLESS_MODEL_IDS="
+    facebook/seamless-m4t-v2-large
+  "\
   -e SADTALKER_MODEL_IDS="
     SadTalker_V0.0.2_512.safetensors
   "\
