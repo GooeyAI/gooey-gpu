@@ -46,6 +46,10 @@ spec:
             value: "{{ $value }}"
           {{- end }}
           {{- end }}
+          {{- range $name, $value := .limits }}
+          - name: "RESOURCE_LIMITS_{{ $name | upper }}"
+            value: "{{ $value }}"
+          {{- end }}
         livenessProbe:
           exec:
             command: [ "bash", "-c", "celery inspect ping -d celery@$HOSTNAME" ]
