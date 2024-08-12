@@ -177,7 +177,7 @@ gooey-gpu also provides a small python helper library to make it easy to write c
    print(result.get())  # { "image": "..." }
    ```
 
-9. During this, try to record the GPU usage using `nvidia-smi`. 
+9. During this, try to record the GPU usage using [`nvitop`](https://github.com/XuehaiPan/nvitop) (or `nvidia-smi`) 
  
    This will come handy to define the resource limits in the helm chart.
    Once you have this number, you need to convert this to the equivalent CPU memory limit. 
@@ -187,10 +187,10 @@ gooey-gpu also provides a small python helper library to make it easy to write c
    ```
    cpu_memory_limit = (cpu_memory_capacity / gpu_memory_capacity) * gpu_memory_limit
    ```
-   E.g. for an azure Standard_NC24ads_A100_v4 with 220Gi CPU memory and 80Gi GPU memory, and a diffusion model with a max GPU memory usage of 7Gib, the CPU memory limit would be:
+   E.g. for an azure Standard_NC24ads_A100_v4 with 216 Gib CPU memory and 80 Gib GPU memory, and a diffusion model with a max GPU memory usage of 7 Gib, the CPU memory limit would be:
    
    ```
-   (220 / 80) * 7 ~= 20Gi
+   (216 / 80) * 7 ~= 20Gi
    ```
    
    This helps us put multiple models in the same GPU and avoid CUDA OOM errors.
@@ -273,6 +273,8 @@ The recommended way to turn a set of research scripts like [Wav2Lip](https://git
 
 4. Once you have these written, you can follow the same steps as the common models to deploy the model.
 
+### 💣 Secret Scanning
 
+Gitleaks will automatically run pre-commit (see `pre-commit-config.yaml` for details) to prevent commits with secrets in the first place. To test this without committing, run `pre-commit` from the terminal. To skip this check, use `SKIP=gitleaks git commit -m "message"` to commit changes. Preferably, label false positives with the `#gitleaks:allow` comment instead of skipping the check.
 
-
+Gitleaks will also run in the CI pipeline as a GitHub action on push and pull request (can also be manually triggered in the actions tab on GitHub). To update the baseline of ignored secrets, run `python ./scripts/create_gitleaks_baseline.py` from the venv and commit the changes to `.gitleaksignore`.

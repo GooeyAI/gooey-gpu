@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: "{{ $.Release.Name }}-nvidia-monitor"
+  namespace: "{{ $.Values.namespace }}"
+  labels:
+    app: "{{ $.Release.Name }}-nvidia-monitor"
+spec:
+  selector:
+    matchLabels:
+      name: "{{ $.Release.Name }}-nvidia-monitor"
+  template:
+    metadata:
+      labels:
+        name: "{{ $.Release.Name }}-nvidia-monitor"
+    spec:
+      nodeSelector:
+        gpuEnabled: "true"
+        gpuType: a100
+      tolerations:
+        - effect: NoSchedule
+          key: kubernetes.azure.com/scalesetpriority
+          operator: Equal
+          value: spot
+{{/*      hostNetwork: true*/}}
+      hostPID: true
+      hostIPC: true
+      containers:
+        - name: monitor
+{{/*          securityContext:*/}}
+{{/*            capabilities:*/}}
+{{/*              add:*/}}
+{{/*                - SYS_ADMIN*/}}
+{{/*            privileged: true*/}}
+{{/*            runAsNonRoot: false*/}}
+{{/*            runAsUser: 0*/}}
+          image: "nvcr.io/nvidia/cuda:12.5.0-runtime-ubuntu22.04"
+          volumeMounts:
+            - name: host
+              mountPath: /host
+          args:
+            - sleep
+            - infinity
+      volumes:
+        - name: host
+          hostPath:
+            path: /

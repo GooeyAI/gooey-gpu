@@ -49,5 +49,4 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-# run prediction server
-ENTRYPOINT celery -A celeryconfig worker --loglevel=INFO --concurrency=1 -P threads
+CMD ["celery", "-A", "celeryconfig", "worker", "--loglevel=INFO", "--concurrency=1", "--pool=threads"]

@@ -18,7 +18,7 @@ class SeamlessASRPipeline(BaseModel):
 
 class SeamlessASRInputs(BaseModel):
     audio: str
-    src_lang: str | None = None
+    src_lang: str
     tgt_lang: str | None = None
 
     chunk_length_s: float = 30

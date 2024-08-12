@@ -1,12 +1,10 @@
-import json
-import mimetypes
 import os
-import subprocess
+import random
 import sys
+import traceback
 import typing
 from functools import lru_cache
 from tempfile import TemporaryDirectory
-from urllib.request import urlretrieve
 
 import cv2
 import numpy as np
@@ -17,17 +15,37 @@ from tqdm import tqdm
 
 import gooey_gpu
 from celeryconfig import app, setup_queues
+from ffmpeg_util import ensure_img_even_dimensions
 
 sadtalker_lib_path = os.path.join(os.path.dirname(__file__), "SadTalker")
 sys.path.append(sadtalker_lib_path)
 
 from src.facerender.animate import AnimateFromCoeff
 from src.generate_batch import get_data
+from src import generate_batch as gb
 from src.generate_facerender_batch import get_facerender_data
 from src.test_audio2coeff import Audio2Coeff
 from src.utils.init_path import init_path
 from src.utils.preprocess import CropAndExtract
 from src.facerender.modules.make_animation import keypoint_transformation
+
+
+MAX_RES = (1920, 1080)
+
+
+# the original sadtalker function does not work for short audio
+old_generate_blink_seq_randomly = gb.generate_blink_seq_randomly
+
+
+def fixed_generate_blink_seq_randomly(num_frames):
+    ratio = np.zeros((num_frames, 1))
+    if int(num_frames / 2) <= 11:
+        return ratio
+    return old_generate_blink_seq_randomly(num_frames)
+
+
+# so we patch in a fixed version
+gb.generate_blink_seq_randomly = fixed_generate_blink_seq_randomly
 
 
 class SadtalkerPipeline(BaseModel):
@@ -67,13 +85,15 @@ class SadtalkerInput(BaseModel):
     )
 
 
-checkpoint_dir = os.path.join(gooey_gpu.CHECKPOINTS_DIR, "sadtalker")
 try:
     os.symlink(
-        os.path.join(checkpoint_dir, "gfpgan"), "gfpgan", target_is_directory=True
+        os.path.join(gooey_gpu.CHECKPOINTS_DIR, "gfpgan"),
+        "gfpgan",
+        target_is_directory=True,
     )
 except FileExistsError:
     pass
+checkpoint_dir = os.path.join(gooey_gpu.CHECKPOINTS_DIR, "sadtalker")
 
 
 @lru_cache
@@ -107,37 +127,60 @@ setup_queues(
 
 @app.task(name="lipsync.sadtalker")
 @gooey_gpu.endpoint
-def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
+def sadtalker(
+    pipeline: SadtalkerPipeline, inputs: SadtalkerInput
+) -> gooey_gpu.InputOutputVideoMetadata:
     assert len(pipeline.upload_urls) == 1, "Expected exactly 1 upload url"
 
-    face_mime_type = mimetypes.guess_type(inputs.source_image)[0] or ""
-    if not ("video/" in face_mime_type or "image/" in face_mime_type):
-        raise ValueError(f"Unsupported face format {face_mime_type!r}")
-
-    audio_mime_type = mimetypes.guess_type(inputs.driven_audio)[0] or ""
-    if not ("audio/" in audio_mime_type or "video/" in audio_mime_type):
-        raise ValueError(f"Unsupported audio format {audio_mime_type!r}")
-
     with TemporaryDirectory() as save_dir:
-        input_path, _ = urlretrieve(
-            inputs.source_image,
-            os.path.join(save_dir, "face" + os.path.splitext(inputs.source_image)[1]),
-        )
-        audio_path, _ = urlretrieve(
-            inputs.driven_audio,
-            os.path.join(save_dir, "audio" + os.path.splitext(inputs.driven_audio)[1]),
-        )
-        if audio_mime_type != "audio/wav":
+        audio_ext = os.path.splitext(inputs.driven_audio)[1]
+        audio_path = os.path.join(save_dir, "audio" + audio_ext)
+        gooey_gpu.download_file_to_path(url=inputs.driven_audio, path=audio_path)
+        input_audio_metadata = gooey_gpu.ffprobe_audio(audio_path)
+        # make sure audio is not 0 seconds
+        if input_audio_metadata.duration_sec <= 0.1:
+            raise gooey_gpu.UserError("Audio is too short")
+        # convert audio to wav
+        if input_audio_metadata.codec_name != "pcm_s16le":
             wav_audio_path = audio_path + ".wav"
-            args = [
-                "ffmpeg", "-y",
+            gooey_gpu.ffmpeg(
                 "-i", audio_path,
                 "-vn", "-acodec", "pcm_s16le", "-ac", "1", "-ar", "16000",
                 wav_audio_path,
-            ]  # fmt:skip
-            print("\t$ " + " ".join(args))
-            print(subprocess.check_output(args, encoding="utf-8"))
+            )  # fmt:skip
             audio_path = wav_audio_path
+
+        video_ext = os.path.splitext(inputs.source_image)[1]
+        video_path = os.path.join(save_dir, "video" + video_ext)
+        gooey_gpu.download_file_to_path(url=inputs.source_image, path=video_path)
+        input_video_metadata = gooey_gpu.ffprobe_video(video_path)
+
+        extra_args = ()
+        duration = input_video_metadata.duration_sec
+        if duration and input_video_metadata.num_frames:
+            # convert video to static img by choosing a random frame in the middle
+            # (fixes oom error when sadtalker tries to load a large video into memory)
+            extra_args += (
+                "-ss",
+                str(clamp(random.random() * duration, duration * 0.2, duration * 0.8)),
+            )
+        if (
+            input_video_metadata.width * input_video_metadata.height
+            > MAX_RES[0] * MAX_RES[1]
+        ):
+            # downscale large inputs
+            extra_args += (
+                "-vf",
+                f"scale=w={MAX_RES[0]}:h={MAX_RES[1]}:force_original_aspect_ratio=decrease",
+            )
+        input_path = video_path + ".jpg"
+        gooey_gpu.ffmpeg(
+            "-i", video_path,
+            *extra_args,
+            "-preset", "ultrafast",
+            "-frames:v", "1",
+            input_path,
+        )  # fmt:skip
 
         preprocess_model, audio_to_coeff, animate_from_coeff = load_model(
             pipeline.model_id, "full" if "full" in pipeline.preprocess else "crop"
@@ -146,43 +189,56 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
         # crop image and extract 3dmm from image
         first_frame_dir = os.path.join(save_dir, "first_frame_dir")
         os.makedirs(first_frame_dir, exist_ok=True)
-        first_coeff_path, crop_pic_path, crop_info = preprocess_model.generate(
-            input_path,
-            first_frame_dir,
-            pipeline.preprocess,
-            source_image_flag=True,
-            pic_size=pipeline.size,
-        )
-        if first_coeff_path is None:
-            raise ValueError("Can't get the coeffs of the input")
-
-        if inputs.ref_eyeblink:
-            ref_eyeblink = urlretrieve(
-                inputs.ref_eyeblink, os.path.join(save_dir, "ref_eyeblink.mp4")
-            )
-            ref_eyeblink_coeff_path, _, _ = preprocess_model.generate(
-                ref_eyeblink,
-                save_dir,
+        try:
+            first_coeff_path, crop_pic_path, crop_info = preprocess_model.generate(
+                input_path,
+                first_frame_dir,
                 pipeline.preprocess,
+                source_image_flag=True,
+                pic_size=pipeline.size,
             )
-        else:
-            ref_eyeblink = None
-            ref_eyeblink_coeff_path = None
+            if first_coeff_path is None:
+                raise ValueError("Can't get the coeffs of the input")
 
-        if inputs.ref_pose:
-            ref_pose = urlretrieve(
-                inputs.ref_pose, os.path.join(save_dir, "ref_pose.mp4")
-            )
-            if ref_pose == ref_eyeblink:
-                ref_pose_coeff_path = ref_eyeblink_coeff_path
-            else:
-                ref_pose_coeff_path, _, _ = preprocess_model.generate(
-                    ref_pose,
+            if inputs.ref_eyeblink:
+                ref_eyeblink = os.path.join(save_dir, "ref_eyeblink.mp4")
+                gooey_gpu.download_file_to_path(
+                    url=inputs.ref_eyeblink, path=ref_eyeblink
+                )
+                ref_eyeblink_coeff_path, _, _ = preprocess_model.generate(
+                    ref_eyeblink,
                     save_dir,
                     pipeline.preprocess,
                 )
-        else:
-            ref_pose_coeff_path = None
+            else:
+                ref_eyeblink = None
+                ref_eyeblink_coeff_path = None
+
+            if inputs.ref_pose:
+                ref_pose = os.path.join(save_dir, "ref_pose.mp4")
+                gooey_gpu.download_file_to_path(url=inputs.ref_pose, path=ref_pose)
+                if ref_pose == ref_eyeblink:
+                    ref_pose_coeff_path = ref_eyeblink_coeff_path
+                else:
+                    ref_pose_coeff_path, _, _ = preprocess_model.generate(
+                        ref_pose,
+                        save_dir,
+                        pipeline.preprocess,
+                    )
+            else:
+                ref_pose_coeff_path = None
+        except (TypeError, IndexError, cv2.error) as e:
+            for line in traceback.format_tb(e.__traceback__):
+                if (
+                    "can not detect the landmark from source image" in line
+                    or "extract_keypoint" in line
+                ):
+                    raise gooey_gpu.UserError(
+                        "Could not identify the face in the input. "
+                        "Please try another image. "
+                        "Humanoid faces and solid backgrounds work best.",
+                    ) from e
+            raise
 
         # audio2ceoff
         batch = get_data(
@@ -225,7 +281,7 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
             size=pipeline.size,
         )
 
-        result_path = animate_from_coeff_generate(
+        result_path, output_video_metadata = animate_from_coeff_generate(
             animate_from_coeff,
             x=data,
             video_save_dir=save_dir,
@@ -239,6 +295,14 @@ def sadtalker(pipeline: SadtalkerPipeline, inputs: SadtalkerInput) -> None:
 
         with open(result_path, "rb") as f:
             gooey_gpu.upload_video_from_bytes(f.read(), pipeline.upload_urls[0])
+
+    return gooey_gpu.InputOutputVideoMetadata(
+        input=input_video_metadata, output=output_video_metadata
+    )
+
+
+def clamp(x, low, high):
+    return max(low, min(high, x))
 
 
 def animate_from_coeff_generate(
@@ -273,9 +337,9 @@ def animate_from_coeff_generate(
         roll_c_seq = None
 
     video_name = x["video_name"] + ".mp4"
-    return_path = os.path.join(video_save_dir, video_name)
+    return_path = str(os.path.join(video_save_dir, video_name))
 
-    img_size = int(img_size) // 2 * 2
+    img_size = int(img_size) // 2 * 2  # make sure its divisble by 2 for ffmpeg libx264
     original_size = crop_info[0]
     if original_size:
         frame_w, frame_h = (
@@ -285,8 +349,21 @@ def animate_from_coeff_generate(
     else:
         frame_w, frame_h = (img_size, img_size)
 
+    out_meta = gooey_gpu.VideoMetadata()
+    out_meta.fps = 25
     if "full" in preprocess.lower():
-        input_frames, out_w, out_h = read_video_frames(input_path)
+        input_frames = [
+            # just read using opencv since we dropped support for videos
+            cv2.cvtColor(cv2.imread(input_path, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+        ]
+        # input_frames = list(
+        #     ffmpeg_read_input_frames(
+        #         width=response.input.width,
+        #         height=response.input.height,
+        #         input_path=input_path,
+        #         fps=response.output.fps,
+        #     )
+        # )
 
         if len(crop_info) != 3:
             raise ValueError("you didn't crop the image")
@@ -298,28 +375,9 @@ def animate_from_coeff_generate(
                 oy1, oy2, ox1, ox2 = cly, cry, clx, crx
             else:
                 oy1, oy2, ox1, ox2 = cly + ly, cly + ry, clx + lx, clx + rx
-    else:
-        out_w, out_h = frame_w, frame_h
 
-    cmd_args = [
-        "ffmpeg",
-        # "-thread_queue_size", "128",
-        "-pixel_format", "rgb24",
-        "-f", "rawvideo",
-        # "-vcodec", "rawvideo",
-        "-s", f"{out_w}x{out_h}",
-        "-r", "25",
-        "-i", "pipe:0",  # stdin
-        "-i", x['audio_path'],
-        # "-vcodec", "libx264",
-        "-pix_fmt", "yuv420p",  # because iphone, see https://trac.ffmpeg.org/wiki/Encode/H.264#Encodingfordumbplayers
-        # "-preset", "ultrafast",
-        return_path,
-    ]  # fmt:skip
-    print("\t$ " + " ".join(cmd_args))
-    ffproc = subprocess.Popen(cmd_args, stdin=subprocess.PIPE)
+    ffproc = None
 
-    i = 0
     frame_num = x["frame_num"]
     for batch in make_animation(
         source_image,
@@ -334,8 +392,7 @@ def animate_from_coeff_generate(
         roll_c_seq,
     ):
         for out_image in batch:
-            i += 1
-            if i > frame_num:
+            if out_meta.num_frames >= frame_num:
                 break
             out_image = img_as_ubyte(
                 out_image.data.cpu().numpy().transpose([1, 2, 0]).astype(np.float32)
@@ -343,7 +400,7 @@ def animate_from_coeff_generate(
             out_image = cv2.resize(out_image, (frame_w, frame_h))
 
             if "full" in preprocess.lower():
-                input_image = input_frames[i % len(input_frames)]
+                input_image = input_frames[out_meta.num_frames % len(input_frames)]
                 p = cv2.resize(out_image, (ox2 - ox1, oy2 - oy1))
                 mask = 255 * np.ones(p.shape, p.dtype)
                 location = ((ox1 + ox2) // 2, (oy1 + oy2) // 2)
@@ -351,61 +408,35 @@ def animate_from_coeff_generate(
                     out_image = cv2.seamlessClone(
                         p, input_image, mask, location, cv2.NORMAL_CLONE
                     )
-                except cv2.error:
-                    raise ValueError(
-                        "Failed to perform full preprocess. Please use the crop mode or try a different aspect ratio."
-                    )
+                except cv2.error as e:
+                    raise gooey_gpu.UserError(
+                        "Failed to perform full preprocess. "
+                        "Please use the crop mode and make sure the input face is clear or try a different aspect ratio. "
+                        "Humanoid faces and solid backgrounds work best."
+                    ) from e
+                out_image = ensure_img_even_dimensions(out_image)
 
-            ffproc.stdin.write(out_image.tostring())
+            if ffproc is None:
+                out_meta.width = out_image.shape[1]
+                out_meta.height = out_image.shape[0]
+                ffproc = gooey_gpu.ffmpeg_get_writer_proc(
+                    width=out_meta.width,
+                    height=out_meta.height,
+                    output_path=return_path,
+                    fps=out_meta.fps,
+                    audio_path=x["audio_path"],
+                )
+            gooey_gpu.ffmpeg_write_output_frame(ffproc, out_image)
+            out_meta.num_frames += 1
 
     ffproc.stdin.close()
     ffproc.wait()
 
-    return return_path
+    if out_meta.num_frames:
+        out_meta.duration_sec = out_meta.num_frames / out_meta.fps
+        out_meta.codec_name = "h264"
 
-
-def read_video_frames(
-    input_path: str,
-) -> typing.Tuple[typing.List[np.ndarray], int, int]:
-    cmd_args = [
-        "ffprobe",
-        "-v", "quiet",
-        "-print_format", "json",
-        "-show_streams", input_path,
-        "-select_streams", "v:0",
-    ]  # fmt:skip
-    print("\t$ " + " ".join(cmd_args))
-    data = json.loads(subprocess.check_output(cmd_args, text=True))
-    if not data["streams"]:
-        raise ValueError("input video has no streams")
-    out_w, out_h = (
-        int(data["streams"][0]["width"]) // 2 * 2,
-        int(data["streams"][0]["height"]) // 2 * 2,
-    )
-
-    cmd_args = [
-        "ffmpeg",
-        "-i", input_path,
-        "-f", "rawvideo",
-        "-pix_fmt", "rgb24",
-        "-s", f"{out_w}x{out_h}",
-        "-r", "25",
-        "pipe:1",
-    ]  # fmt:skip
-    print("\t$ " + " ".join(cmd_args))
-    ffproc = subprocess.Popen(cmd_args, stdout=subprocess.PIPE)
-
-    input_frames = []
-    while True:
-        raw_image = ffproc.stdout.read(out_h * out_w * 3)
-        if not raw_image:
-            break
-        input_image = np.frombuffer(raw_image, dtype=np.uint8).reshape(
-            (out_h, out_w, 3)
-        )
-        input_frames.append(input_image)
-
-    return input_frames, out_w, out_h
+    return return_path, out_meta
 
 
 def make_animation(

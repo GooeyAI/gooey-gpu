@@ -1,9 +1,9 @@
-{{- if .Values.rabbitmqAutoscaling.enabled }}
+ {{- if .Values.autoscaling.enabled }}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
+  name: "{{ $.Release.Name }}-keda-auth-rabbitmq-1"
   namespace: "{{ $.Values.namespace }}"
 spec:
   env:
@@ -11,7 +11,7 @@ spec:
       name: BROKER_URL
 {{- end }}
 
-{{- if .Values.rabbitmqAutoscaling.enabled }}
+{{- if .Values.autoscaling.enabled }}
 {{- range $deployment := .Values.deployments }}
 ---
 apiVersion: keda.sh/v1alpha1
@@ -20,28 +20,15 @@ metadata:
   name: "{{ $.Release.Name }}-rabbitmq-{{ .name }}"
   namespace: "{{ $.Values.namespace }}"
 spec:
+  {{- $autoscaling := ($deployment.autoscaling | default dict) }}
   scaleTargetRef:
     name: "{{ $.Release.Name }}-{{ .name }}"
-  {{- $minReplicaCount := $deployment.minReplicaCount | default 1 }}
-  minReplicaCount: {{ $minReplicaCount }}
-  maxReplicaCount: {{ $deployment.maxReplicaCount | default (add $minReplicaCount 2) }}
-  pollingInterval: 3
+  minReplicaCount: {{ $autoscaling.minReplicaCount | default $.Values.autoscaling.minReplicaCount }}
+  maxReplicaCount: {{ $autoscaling.maxReplicaCount | default $.Values.autoscaling.maxReplicaCount }}
   cooldownPeriod: 1200
   triggers:
-    {{- if $deployment.queueNames }}
-    {{- range $queueName := $deployment.queueNames }}
-    - type: rabbitmq
-      metadata:
-        protocol: amqp
-        queueName: "{{ $queueName }}"
-        mode: QueueLength
-        value: "{{ $deployment.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
-      authenticationRef:
-        name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
-    {{- end }}
-    {{- else }}
     {{- $queuePrefix := get $deployment.env "QUEUE_PREFIX" | default "gooey-gpu" }}
-    {{- range $queueNameVar := $.Values.rabbitmqAutoscaling.queueNameVars }}
+    {{- range $queueNameVar := $.Values.autoscaling.queueNameVars }}
     {{- range $queue := regexSplit "\n" (get $deployment.env $queueNameVar | default "") -1 | compact }}
     {{- $queueName := printf "%s/%s" $queuePrefix $queue }}
     - type: rabbitmq
@@ -49,10 +36,9 @@ spec:
         protocol: amqp
         queueName: "{{ $queueName }}"
         mode: QueueLength
-        value: "{{ $deployment.queueLength | default $.Values.rabbitmqAutoscaling.defaultQueueLength }}"
+        value: "{{ $autoscaling.queueLength | default $.Values.autoscaling.queueLength }}"
       authenticationRef:
-        name: "{{ $.Release.Name }}-keda-auth-rabbitmq"
-    {{- end }}
+        name: "{{ $.Release.Name }}-keda-auth-rabbitmq-1"
     {{- end }}
     {{- end }}
 {{- end }}

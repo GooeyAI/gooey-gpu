@@ -6,7 +6,6 @@ import math
 import mimetypes
 import os
 import threading
-import typing
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 
@@ -16,7 +15,9 @@ import requests
 import sentry_sdk
 import torch
 import transformers
-from pydantic import BaseModel
+
+from exceptions import raise_for_status
+from ffmpeg_util import *
 
 # from accelerate import cpu_offload_with_hook
 
@@ -44,7 +45,7 @@ else:
     total_mem_bytes = torch.cuda.mem_get_info()[1]
     fraction = gpu_limit_gib * 1024**3 / total_mem_bytes
     torch.cuda.set_per_process_memory_fraction(fraction)
-    print(f"GPU limit set to {gpu_limit_gib}Gi ({fraction:.2%})")
+    print(f"GPU memory limit set to {gpu_limit_gib}Gi ({fraction:.2%})")
 
 
 if SENTRY_DSN:
@@ -202,7 +203,7 @@ def upload_image(im_pil: PIL.Image.Image, url: str):
         headers={"Content-Type": "image/png"},
         data=im_bytes,
     )
-    r.raise_for_status()
+    raise_for_status(r)
 
 
 def apply_parallel(fn, *iterables):
@@ -231,13 +232,22 @@ def upload_audio(audio, url: str, rate: int = 16_000):
 
 def upload_audio_from_bytes(audio: bytes, url: str):
     r = requests.put(url, headers={"Content-Type": "audio/wav"}, data=audio)
-    r.raise_for_status()
+    raise_for_status(r)
 
 
 def upload_video_from_bytes(video, url: str):
     r = requests.put(url, headers={"Content-Type": "video/mp4"}, data=video)
-    r.raise_for_status()
+    raise_for_status(r)
 
 
 # Add some missing mimetypes
 mimetypes.add_type("audio/wav", ".wav")
+
+
+def download_file_to_path(*, url: str, path: str, cached: bool = False):
+    if cached and os.path.exists(path):
+        return
+    r = requests.get(url)
+    raise_for_status(r, is_user_url=not cached)
+    with open(path, "wb") as f:
+        f.write(r.content)

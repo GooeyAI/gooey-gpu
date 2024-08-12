@@ -15,7 +15,7 @@ app.conf.update(
     imports=os.environ["IMPORTS"].split(),
     worker_prefetch_multiplier=1,
     task_track_started=True,
-    task_acks_late=True,
+    # task_acks_late=True,
 )
 
 

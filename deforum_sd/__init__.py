@@ -40,7 +40,7 @@ def deforum(pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs):
             headers={"Content-Type": "video/mp4"},
             data=vid_bytes,
         )
-        r.raise_for_status()
+        gooey_gpu.raise_for_status(r)
         return
 
 
