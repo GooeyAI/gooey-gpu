@@ -43,7 +43,7 @@ def setup_queues(
             # for some reason, celery seems to swallow exceptions in init
             print(f"Error loading {model_id}:")
             traceback.print_exc()
-            raise WorkerShutdown()
+            raise WorkerShutdown(1)
 
     init_fns.append(init)
 
