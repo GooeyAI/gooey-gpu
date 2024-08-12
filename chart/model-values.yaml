@@ -195,9 +195,10 @@ deployments:
         bark
 
   - name: "common-seamless"
-    image: "us-docker.pkg.dev/dara-c1b52/cloudbuild/gooey-gpu/common@sha256:5fb0ffa128cbdda86747fedf5ef68e9df8256735d8535149c6fffa41a3749883"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:3"
     limits:
-      memory: "19Gi"
+      gpu: "10Gi"
+      memory: "28Gi"  # (220 / 80) * 10
       cpu: "1"
     env:
       IMPORTS: |-
