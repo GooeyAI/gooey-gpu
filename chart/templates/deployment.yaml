@@ -50,6 +50,10 @@ spec:
           - name: "RESOURCE_LIMITS_{{ $name | upper }}"
             value: "{{ $value }}"
           {{- end }}
+          {{- if .limits_gpu }}
+          - name: "RESOURCE_LIMITS_GPU"
+            value: "{{ .limits_gpu }}"
+          {{- end }}
         livenessProbe:
           exec:
             command: [ "bash", "-c", "celery inspect ping -d celery@$HOSTNAME" ]

@@ -203,8 +203,8 @@ deployments:
 
   - name: "common-seamless"
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:6"
+    limits_gpu: "10Gi"
     limits:
-      gpu: "10Gi"
       memory: "28Gi"  # (220 / 80) * 10
       cpu: "1"
     env:
