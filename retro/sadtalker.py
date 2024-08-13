@@ -83,6 +83,7 @@ class SadtalkerInput(BaseModel):
     still: bool = (
         False  # can crop back to the original videos for the full body aniamtion
     )
+    max_frames: typing.Optional[int] = None
 
 
 try:
@@ -291,6 +292,7 @@ def sadtalker(
             background_enhancer=inputs.background_enhancer,
             preprocess=pipeline.preprocess,
             img_size=pipeline.size,
+            max_frames=inputs.max_frames,
         )
 
         with open(result_path, "rb") as f:
@@ -315,6 +317,7 @@ def animate_from_coeff_generate(
     background_enhancer,
     preprocess,
     img_size,
+    max_frames,
 ):
 
     source_image = x["source_image"].type(torch.FloatTensor)
@@ -392,7 +395,7 @@ def animate_from_coeff_generate(
         roll_c_seq,
     ):
         for out_image in batch:
-            if out_meta.num_frames >= frame_num:
+            if max_frames and out_meta.num_frames > max_frames:
                 break
             out_image = img_as_ubyte(
                 out_image.data.cpu().numpy().transpose([1, 2, 0]).astype(np.float32)

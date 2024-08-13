@@ -82,6 +82,7 @@ class Wav2LipInputs(BaseModel):
         default=480,
     )
     batch_size: int = 256
+    max_frames: typing.Optional[int] = None
 
 
 @app.task(name="wav2lip")
@@ -173,6 +174,8 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
 
     mel_chunks = get_mel_chunks(inputs.audio, fps)
     for idx in tqdm(range(0, len(mel_chunks), inputs.batch_size)):
+        if inputs.max_frames and idx >= inputs.max_frames:
+            break
         if is_static:
             frame_batch = [frame.copy()] * inputs.batch_size
         else:

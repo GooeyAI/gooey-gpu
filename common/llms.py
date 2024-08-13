@@ -107,12 +107,12 @@ def load_pipe(model_id: str) -> transformers.TextGenerationPipeline:
 
             records.append(
                 {
-                    "generated_text": text[prompt_length:],
                     "usage": {
                         "completion_tokens": len(sequence) - prompt_tokens,
                         "prompt_tokens": prompt_tokens,
                         "total_tokens": len(sequence),
                     },
+                    "generated_text": text[prompt_length:],
                 }
             )
 
