@@ -74,7 +74,7 @@ docker run \
     RealESRGAN_x2plus
   "\
   -e LLM_MODEL_IDS="
-    aisingapore/sea-lion-7b-instruct
+    aisingapore/llama3-8b-cpt-sea-lionv2-instruct
   "\
   -e C_FORCE_ROOT=1 \
   -e BROKER_URL=${BROKER_URL:-"amqp://"} \

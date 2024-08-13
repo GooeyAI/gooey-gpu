@@ -365,16 +365,29 @@ deployments:
       ESRGAN_MODEL_IDS: |-
         RealESRGAN_x2plus
 
-  - name: "common-llms-sealion"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:5"
+  - name: "common-llms-sealion-v2"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:7"
+    limits_gpu: "30Gi"
     limits:
-      memory: "45Gi"
+      memory: "80Gi"  # (220 / 80) * 30
       cpu: "2"
     env:
       IMPORTS: |-
         common.llms
       LLM_MODEL_IDS: |-
-        aisingapore/sea-lion-7b-instruct
+        aisingapore/llama3-8b-cpt-sea-lionv2-instruct
+
+  - name: "common-llms-sarvam-2b"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:7"
+    limits_gpu: "6Gi"
+    limits:
+      memory: "16Gi"  # (220 / 80) * 6
+      cpu: "2"
+    env:
+      IMPORTS: |-
+        common.llms
+      LLM_MODEL_IDS: |-
+        sarvamai/sarvam-2b-v0.5
 
 ## Dependencies
 nfs-server-provisioner:
