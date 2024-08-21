@@ -45,7 +45,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "35Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -57,7 +56,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "35Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -69,7 +67,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "35Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -81,7 +78,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "35Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -94,7 +90,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "50Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -110,7 +105,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "20Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -127,7 +121,6 @@ deployments:
       maxReplicaCount: 12
     limits:
       memory: "20Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         deforum_sd
@@ -142,7 +135,6 @@ deployments:
       maxReplicaCount: 3
     limits:
       memory: "20Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         deforum_sd
@@ -153,7 +145,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "20Gi"
-      cpu: "1"
     env:
       QUEUE_PREFIX: "gooey-gpu/short"
       IMPORTS: |-
@@ -165,7 +156,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "20Gi"
-      cpu: "1"
     env:
       QUEUE_PREFIX: "gooey-gpu/short"
       IMPORTS: |-
@@ -177,7 +167,6 @@ deployments:
     image: *retroImg
     limits:
       memory: "20Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
           retro.nvidia_nemo
@@ -189,7 +178,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "20Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.audio_ldm
@@ -206,7 +194,6 @@ deployments:
     limits_gpu: "10Gi"
     limits:
       memory: "28Gi"  # (220 / 80) * 10
-      cpu: "1"
     env:
       IMPORTS: |-
         common.seamless_asr
@@ -217,7 +204,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "12Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -228,7 +214,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "52Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.diffusion
@@ -239,7 +224,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "25Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.mms
@@ -250,7 +234,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "40Gi"
-      cpu: "1"
     env:
       QUEUE_PREFIX: "gooey-gpu/long"
       IMPORTS: |-
@@ -263,7 +246,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "40Gi"
-      cpu: "1"
     env:
       QUEUE_PREFIX: "gooey-gpu/long"
       IMPORTS: |-
@@ -276,7 +258,6 @@ deployments:
     image: *commonImg
     limits:
       memory: "10Gi"
-      cpu: "1"
     env:
       QUEUE_PREFIX: "gooey-gpu/short"
       IMPORTS: |-
@@ -291,7 +272,6 @@ deployments:
       queueLength: 20
     limits:
       memory: "18Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         common.embeddings
@@ -311,7 +291,6 @@ deployments:
       maxReplicaCount: 10
     limits:
       memory: "30Gi"
-      cpu: "2"
     env:
       IMPORTS: |-
         retro.sadtalker
@@ -325,7 +304,6 @@ deployments:
       maxReplicaCount: 10
     limits:
       memory: "37Gi"
-      cpu: "2"
     env:
       IMPORTS: |-
         retro.wav2lip
@@ -338,7 +316,6 @@ deployments:
       queueLength: 20
     limits:
       memory: "9Gi"
-      cpu: "1"
     env:
       IMPORTS: |-
         retro.u2net
@@ -356,7 +333,6 @@ deployments:
       maxReplicaCount: 10
     limits:
       memory: "24Gi"
-      cpu: "2"
     env:
       IMPORTS: |-
         retro.gfpgan
@@ -370,7 +346,6 @@ deployments:
     limits_gpu: "30Gi"
     limits:
       memory: "80Gi"  # (220 / 80) * 30
-      cpu: "2"
     env:
       IMPORTS: |-
         common.llms
@@ -382,7 +357,6 @@ deployments:
     limits_gpu: "6Gi"
     limits:
       memory: "16Gi"  # (220 / 80) * 6
-      cpu: "2"
     env:
       IMPORTS: |-
         common.llms
