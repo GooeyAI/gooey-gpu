@@ -95,13 +95,18 @@ def ffprobe_video(input_path: str) -> VideoMetadata:
 
 
 def ffmpeg_read_input_frames(
-    *, width: float, height: float, input_path: str, fps: float
+    *,
+    width: float,
+    height: float,
+    input_path: str,
+    fps: float,
+    pixel_format: str = "rgb24",
 ) -> typing.Iterator[np.ndarray]:
     cmd_args = [
         "ffmpeg", "-hide_banner", "-nostats",
         "-i", input_path,
         "-f", "rawvideo",
-        "-pix_fmt", "rgb24",
+        "-pix_fmt", pixel_format,
         "-s", f"{width}x{height}",
         "-r", str(fps),
         "pipe:1",
@@ -124,19 +129,25 @@ def ffmpeg_read_input_frames(
 
 
 def ffmpeg_get_writer_proc(
-    *, width: int, height: int, output_path: str, fps: float, audio_path: str
+    *,
+    width: int,
+    height: int,
+    output_path: str,
+    fps: float,
+    audio_path: str,
+    pixel_format: str = "rgb24",
 ) -> subprocess.Popen:
     cmd_args = [
         "ffmpeg", "-hide_banner", "-nostats",
         # "-thread_queue_size", "128",
-        "-pixel_format", "rgb24",
+        "-pixel_format", pixel_format,
         "-f", "rawvideo",
         # "-vcodec", "rawvideo",
         "-s", f"{width}x{height}",
         "-r", str(fps),
         "-i", "pipe:0",  # stdin
         "-i", audio_path,
-        "-map", "0:v", "-map", "1:a",
+        "-map", "0:v", "-map", "1:a", "-shortest",
         # "-c:a", "copy",
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p", # because iphone, see https://trac.ffmpeg.org/wiki/Encode/H.264#Encodingfordumbplayers

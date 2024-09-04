@@ -284,13 +284,14 @@ deployments:
         thenlper/gte-base
 
   - name: "retro-sadtalker"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:12"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:13"
     autoscaling:
       queueLength: 2
       minReplicaCount: 3
       maxReplicaCount: 10
+    limits_gpu: "8Gi"
     limits:
-      memory: "30Gi"
+      memory: "25Gi" # (220 / 80) * 8
     env:
       IMPORTS: |-
         retro.sadtalker
@@ -298,12 +299,13 @@ deployments:
         SadTalker_V0.0.2_512.safetensors
 
   - name: "retro-wav2lip-gan"
-    image: *retroImg
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:13"
     autoscaling:
       minReplicaCount: 2
       maxReplicaCount: 10
+    limits_gpu: "10Gi"
     limits:
-      memory: "37Gi"
+      memory: "30Gi" # (220 / 80) * 10
     env:
       IMPORTS: |-
         retro.wav2lip

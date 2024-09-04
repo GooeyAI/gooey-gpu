@@ -39,13 +39,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
 	&& rm -rf /var/lib/apt/lists/*
 
-COPY retro/*.txt .
-RUN pip install --no-cache-dir -U cython wheel setuptools pip \
-  && pip install --no-cache-dir -r requirements1.txt \
-  && pip install --no-cache-dir -r requirements2.txt \
-  && pip install --no-cache-dir git+https://github.com/elliottzheng/batch-face.git@master
-
-RUN pip install --no-cache-dir safetensors~=0.4.3 facexlib~=0.3.0 yacs~=0.1.8 gfpgan~=1.3.8 imageio==2.19.3 imageio-ffmpeg==0.4.7
+COPY retro/requirements1.txt .
+RUN pip install --no-cache-dir -U cython wheel setuptools pip
+RUN pip install --no-cache-dir -r requirements1.txt
+COPY retro/requirements2.txt .
+RUN pip install --no-cache-dir -r requirements2.txt
 
 # copy sources
 COPY . .

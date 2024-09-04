@@ -173,36 +173,28 @@ def main(model, detector, outfile: str, inputs: Wav2LipInputs):
     prev_faces = None
 
     mel_chunks = get_mel_chunks(inputs.audio, fps)
-    for idx in tqdm(range(0, len(mel_chunks), inputs.batch_size)):
-        if inputs.max_frames and idx >= inputs.max_frames:
-            break
+    max_frames = min(len(mel_chunks), inputs.max_frames or float("inf"))
+    batch_size = min(inputs.batch_size, max_frames)
+    for idx in tqdm(range(0, max_frames, batch_size)):
         if is_static:
-            frame_batch = [frame.copy()] * inputs.batch_size
+            frame_batch = [frame.copy()] * batch_size
         else:
             frame_batch = list(
-                read_n_frames(
-                    input_stream, inputs.face, inputs.batch_size, inputs.out_height
-                )
+                read_n_frames(input_stream, inputs.face, batch_size, inputs.out_height)
             )
 
         if ffproc is None:
             frame_h, frame_w = frame_batch[0].shape[:-1]
-            gooey_gpu.ffmpeg(
-                # "-thread_queue_size", "128",
-                "-pixel_format", "bgr24", # to match opencv
-                "-f", "rawvideo",
-                # "-vcodec", "rawvideo",
-                "-s", f"{frame_w}x{frame_h}",
-                "-r", str(fps),
-                "-i", "pipe:0", # stdin
-                "-i", inputs.audio,
-                # "-vcodec", "libx264",
-                "-pix_fmt", "yuv420p", # because iphone, see https://trac.ffmpeg.org/wiki/Encode/H.264#Encodingfordumbplayers
-                # "-preset", "ultrafast",
-                outfile,
-            )  # fmt:skip
+            ffproc = gooey_gpu.ffmpeg_get_writer_proc(
+                width=frame_w,
+                height=frame_h,
+                output_path=outfile,
+                fps=fps,
+                audio_path=inputs.audio,
+                pixel_format="bgr24",
+            )
 
-        mel_batch = mel_chunks[idx : idx + inputs.batch_size]
+        mel_batch = mel_chunks[idx : idx + batch_size]
         frame_batch = frame_batch[: len(mel_batch)]
 
         coords_batch, prev_faces = face_detect(
