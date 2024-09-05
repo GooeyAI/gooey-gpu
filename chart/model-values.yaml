@@ -343,17 +343,6 @@ deployments:
       ESRGAN_MODEL_IDS: |-
         RealESRGAN_x2plus
 
-  - name: "common-llms-sealion-v2"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:7"
-    limits_gpu: "30Gi"
-    limits:
-      memory: "80Gi"  # (220 / 80) * 30
-    env:
-      IMPORTS: |-
-        common.llms
-      LLM_MODEL_IDS: |-
-        aisingapore/llama3-8b-cpt-sea-lionv2-instruct
-
   - name: "common-llms-sealion-v2-1"
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:7"
     limits_gpu: "30Gi"
