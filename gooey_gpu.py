@@ -38,7 +38,7 @@ CHECKPOINTS_DIR = (
 )
 
 try:
-    gpu_limit_gib = float(os.environ["RESOURCE_LIMITS_GPU"].removesuffix("Gi"))
+    gpu_limit_gib = float(os.environ["RESOURCE_LIMITS_GPU"].replace("Gi", ""))
 except (KeyError, ValueError):
     print("RESOURCE_LIMITS_GPU environment variable not set to a valid value.")
 else:
