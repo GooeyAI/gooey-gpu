@@ -1,10 +1,6 @@
 name: Docker Image CI (common)
 
-on:
-  push:
-    paths:
-      - "common/**"
-
+on: push
 jobs:
   build:
     runs-on: ubuntu-latest
