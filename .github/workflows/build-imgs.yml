@@ -1,6 +1,7 @@
 name: Docker Image CI (common)
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - "common/**"
