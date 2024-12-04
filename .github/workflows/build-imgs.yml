@@ -1,6 +1,11 @@
 name: Docker Image CI (common)
 
-on: push
+on:
+  push:
+    paths:
+      - "common/**"
+      - ".github/workflows/build-imgs.yml"
+
 jobs:
   build:
     runs-on: ubuntu-latest
