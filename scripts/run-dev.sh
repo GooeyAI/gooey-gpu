@@ -34,9 +34,7 @@ docker run \
     facebook/mms-1b-all
   "\
   -e WHISPER_MODEL_IDS="
-    openai/whisper-large-v2
-    vasista22/whisper-telugu-large-v2
-    vasista22/whisper-hindi-large-v2
+    dmatekenya/whisper-large-v3-chichewa
   " \
   -e SD_MODEL_IDS="
     stabilityai/stable-diffusion-2-inpainting
