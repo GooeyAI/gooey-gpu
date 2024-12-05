@@ -1,10 +1,12 @@
 import os
+import typing
 from functools import lru_cache
 
 import numpy as np
 import requests
 import torch
 import transformers
+from transformers import WhisperTokenizer
 
 import gooey_gpu
 from api import PipelineInfo, WhisperInputs, AsrOutput
@@ -20,12 +22,14 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
     kwargs = {}
     if inputs.return_timestamps:
         kwargs["return_timestamps"] = True
+    generate_kwargs = {}
     if inputs.language:
-        kwargs["generate_kwargs"] = dict(
-            forced_decoder_ids=pipe.tokenizer.get_decoder_prompt_ids(
-                task=inputs.task, language=inputs.language
-            )
-        )
+        generate_kwargs["language"] = inputs.language
+    if inputs.task:
+        generate_kwargs["task"] = inputs.task
+    if generate_kwargs:
+        kwargs["generate_kwargs"] = generate_kwargs
+
     # see https://github.com/huggingface/transformers/issues/24707
     old_postprocess = pipe.postprocess
     if inputs.decoder_kwargs:
@@ -58,15 +62,19 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
 
 
 @lru_cache
-def load_pipe(model_id: str):
+def load_pipe(model_id: str) -> transformers.AutomaticSpeechRecognitionPipeline:
     print(f"Loading asr model {model_id!r}...")
+    kwargs = {}
+    if tokenizer_from := os.environ.get("WHISPER_TOKENIZER_FROM"):
+        kwargs["tokenizer"] = WhisperTokenizer.from_pretrained(tokenizer_from.strip())
     pipe = transformers.pipeline(
         "automatic-speech-recognition",
         model=model_id,
         device=gooey_gpu.DEVICE_ID,
         torch_dtype=torch.float16,
+        **kwargs,
     )
-    return pipe
+    return typing.cast(transformers.AutomaticSpeechRecognitionPipeline, pipe)
 
 
 setup_queues(

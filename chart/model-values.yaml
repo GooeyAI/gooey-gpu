@@ -36,13 +36,14 @@ controlnetModelIds: &controlnetModelIds |-
     ioclab/control_v1p_sd15_brightness
     monster-labs/control_v1p_sd15_qrcode_monster/v2
 
-commonImg: &commonImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:3"
+commonImgOld: &commonImgOld "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:3"
+commonImg: &commonImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:8"
 retroImg: &retroImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:6"
 deforumImg: &deforumImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-deforum_sd:1"
 
 deployments:
   - name: "common-diffusion-dreamshaper"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "35Gi"
     env:
@@ -53,7 +54,7 @@ deployments:
       SD_MODEL_IDS: |-
         Lykon/DreamShaper
   - name: "common-diffusion-stable-diffusion-2-1"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "35Gi"
     env:
@@ -64,7 +65,7 @@ deployments:
       SD_MODEL_IDS: |-
         stabilityai/stable-diffusion-2-1
   - name: "common-diffusion-dreamlike-photoreal-2"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "35Gi"
     env:
@@ -75,7 +76,7 @@ deployments:
       SD_MODEL_IDS: |-
         dreamlike-art/dreamlike-photoreal-2.0
   - name: "common-diffusion-stable-diffusion-v1-5"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "35Gi"
     env:
@@ -87,7 +88,7 @@ deployments:
         runwayml/stable-diffusion-v1-5
 
   - name: "common-diffusion-on-demand"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "50Gi"
     env:
@@ -102,7 +103,7 @@ deployments:
         darkstorm2150/Protogen_v5.3_Official_Release
 
   - name: "common-diffusion-inpaint"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "20Gi"
     env:
@@ -142,7 +143,7 @@ deployments:
         epicdream.safetensors
 
   - name: "common-whisper-en-short"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "20Gi"
     env:
@@ -153,7 +154,7 @@ deployments:
         openai/whisper-large-v2
 
   - name: "common-whisper-te-short"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "20Gi"
     env:
@@ -162,6 +163,69 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         vasista22/whisper-telugu-large-v2
+
+  - name: "common-whisper-en-te-long"
+    image: *commonImgOld
+    limits:
+      memory: "40Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        openai/whisper-large-v2
+        vasista22/whisper-telugu-large-v2
+
+  - name: "common-whisper-hi-bho-short"
+    image: *commonImgOld
+    limits:
+      memory: "10Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+
+  - name: "common-whisper-hi-bho-long"
+    image: *commonImgOld
+    limits:
+      memory: "40Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+
+  - name: "common-whisper-chichewa-short"
+    image: *commonImg
+    limits_gpu: "10Gi"
+    limits:
+      memory: "28Gi" # (220 / 80) * 10
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        dmatekenya/whisper-large-v3-chichewa
+      WHISPER_TOKENIZER_FROM: openai/whisper-large-v3
+  - name: "common-whisper-chichewa-long"
+    image: *commonImg
+    autoscaling:
+      minReplicaCount: 0
+    limits_gpu: "10Gi"
+    limits:
+      memory: "28Gi" # (220 / 80) * 10
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        dmatekenya/whisper-large-v3-chichewa
+      WHISPER_TOKENIZER_FROM: openai/whisper-large-v3
 
   - name: "retro-nemo-asr"
     image: *retroImg
@@ -175,7 +239,7 @@ deployments:
           https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "common-audio-ldm-bark"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "20Gi"
     env:
@@ -190,7 +254,7 @@ deployments:
         bark
 
   - name: "common-seamless"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:6"
+    image: *commonImg
     limits_gpu: "10Gi"
     limits:
       memory: "28Gi"  # (220 / 80) * 10
@@ -201,7 +265,7 @@ deployments:
         facebook/seamless-m4t-v2-large
 
   - name: "common-diffusion-instruct-pix2pix"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "12Gi"
     env:
@@ -211,7 +275,7 @@ deployments:
         timbrooks/instruct-pix2pix
 
   - name: "common-diffusion-upscale"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "52Gi"
     env:
@@ -221,7 +285,7 @@ deployments:
         stabilityai/stable-diffusion-x4-upscaler
 
   - name: "common-mms"
-    image: *commonImg
+    image: *commonImgOld
     limits:
       memory: "25Gi"
     env:
@@ -230,44 +294,8 @@ deployments:
       MMS_MODEL_IDS: |-
         facebook/mms-1b-all
 
-  - name: "common-whisper-en-te-long"
-    image: *commonImg
-    limits:
-      memory: "40Gi"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/long"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        openai/whisper-large-v2
-        vasista22/whisper-telugu-large-v2
-
-  - name: "common-whisper-hi-bho-long"
-    image: *commonImg
-    limits:
-      memory: "40Gi"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/long"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        vasista22/whisper-hindi-large-v2
-        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
-
-  - name: "common-whisper-hi-bho-short"
-    image: *commonImg
-    limits:
-      memory: "10Gi"
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        vasista22/whisper-hindi-large-v2
-        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
-
   - name: "common-embeddings-1"
-    image: *commonImg
+    image: *commonImgOld
     autoscaling:
       queueLength: 20
     limits:
@@ -344,7 +372,7 @@ deployments:
         RealESRGAN_x2plus
 
   - name: "common-llms-afrollama-v1"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:7"
+    image: *commonImg
     limits_gpu: "30Gi"
     limits:
       memory: "80Gi"  # (220 / 80) * 30
@@ -355,7 +383,7 @@ deployments:
         Jacaranda/AfroLlama_V1
 
   - name: "common-llms-sealion-v2-1"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:7"
+    image: *commonImg
     limits_gpu: "30Gi"
     limits:
       memory: "80Gi"  # (220 / 80) * 30
@@ -366,7 +394,7 @@ deployments:
         aisingapore/llama3-8b-cpt-sea-lionv2.1-instruct
 
   - name: "common-llms-sarvam-2b"
-    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:7"
+    image: *commonImg
     limits_gpu: "6Gi"
     limits:
       memory: "16Gi"  # (220 / 80) * 6
