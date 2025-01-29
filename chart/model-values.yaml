@@ -200,33 +200,6 @@ deployments:
         vasista22/whisper-hindi-large-v2
         Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
 
-  - name: "common-whisper-chichewa-short"
-    image: *commonImg
-    limits_gpu: "10Gi"
-    limits:
-      memory: "28Gi" # (220 / 80) * 10
-    env:
-      QUEUE_PREFIX: "gooey-gpu/short"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        dmatekenya/whisper-large-v3-chichewa
-      WHISPER_TOKENIZER_FROM: openai/whisper-large-v3
-  - name: "common-whisper-chichewa-long"
-    image: *commonImg
-    autoscaling:
-      minReplicaCount: 0
-    limits_gpu: "10Gi"
-    limits:
-      memory: "28Gi" # (220 / 80) * 10
-    env:
-      QUEUE_PREFIX: "gooey-gpu/long"
-      IMPORTS: |-
-        common.whisper
-      WHISPER_MODEL_IDS: |-
-        dmatekenya/whisper-large-v3-chichewa
-      WHISPER_TOKENIZER_FROM: openai/whisper-large-v3
-
   - name: "retro-nemo-asr"
     image: *retroImg
     limits:
