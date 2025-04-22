@@ -253,6 +253,8 @@ deployments:
 
   - name: "common-diffusion-instruct-pix2pix"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "12Gi"
     env:
@@ -263,6 +265,8 @@ deployments:
 
   - name: "common-diffusion-upscale"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "52Gi"
     env:
