@@ -364,6 +364,8 @@ deployments:
 
   - name: "common-llms-sealion-v2-1"
     image: *commonImg
+    autoscaling:
+      minReplicaCount: 0
     limits_gpu: "30Gi"
     limits:
       memory: "80Gi"  # (220 / 80) * 30
