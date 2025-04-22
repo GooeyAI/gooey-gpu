@@ -257,7 +257,7 @@ deployments:
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:8"
     autoscaling:
       queueLength: 2
-      minReplicaCount: 3
+      minReplicaCount: 1
       maxReplicaCount: 10
     limits:
       memory: "24Gi"
