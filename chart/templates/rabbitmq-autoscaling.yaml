@@ -23,8 +23,8 @@ spec:
   {{- $autoscaling := ($deployment.autoscaling | default dict) }}
   scaleTargetRef:
     name: "{{ $.Release.Name }}-{{ .name }}"
-  minReplicaCount: {{ $autoscaling.minReplicaCount | default $.Values.autoscaling.minReplicaCount }}
-  maxReplicaCount: {{ $autoscaling.maxReplicaCount | default $.Values.autoscaling.maxReplicaCount }}
+  minReplicaCount: {{ if hasKey $autoscaling "minReplicaCount" }}{{ $autoscaling.minReplicaCount }}{{ else }}{{ $.Values.autoscaling.minReplicaCount }}{{ end }}
+  maxReplicaCount: {{ if hasKey $autoscaling "maxReplicaCount" }}{{ $autoscaling.maxReplicaCount }}{{ else }}{{ $.Values.autoscaling.maxReplicaCount }}{{ end }}
   cooldownPeriod: 1200
   triggers:
     {{- $queuePrefix := get $deployment.env "QUEUE_PREFIX" | default "gooey-gpu" }}

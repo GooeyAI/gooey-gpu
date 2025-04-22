@@ -12,6 +12,7 @@ autoscaling:
     - WAV2LIP_MODEL_IDS
     - U2NET_MODEL_IDS
     - DIS_MODEL_IDS
+    - NEMO_ASR_MODEL_IDS
     - AUDIO_LDM_MODEL_IDS
     - BARK_MODEL_IDS
     - SEAMLESS_MODEL_IDS
@@ -86,6 +87,35 @@ deployments:
       SD_MODEL_IDS: |-
         runwayml/stable-diffusion-v1-5
 
+  - name: "common-diffusion-on-demand"
+    image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
+    limits:
+      memory: "50Gi"
+    env:
+      IMPORTS: |-
+        common.diffusion
+        common.controlnet
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
+        wavymulder/Analog-Diffusion
+        prompthero/openjourney
+        prompthero/openjourney-v2
+        darkstorm2150/Protogen_v5.3_Official_Release
+
+  - name: "common-diffusion-inpaint"
+    image: *commonImgOld
+    limits:
+      memory: "20Gi"
+    env:
+      IMPORTS: |-
+        common.diffusion
+      CONTROLNET_MODEL_IDS: *controlnetModelIds
+      SD_MODEL_IDS: |-
+        stabilityai/stable-diffusion-2-inpainting
+        runwayml/stable-diffusion-inpainting
+
   - name: "deforum-sd-1"
     image: *deforumImg
     autoscaling:
@@ -125,8 +155,23 @@ deployments:
       WHISPER_MODEL_IDS: |-
         openai/whisper-large-v2
 
-  - name: "common-whisper-en-long"
+  - name: "common-whisper-te-short"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
+    limits:
+      memory: "20Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-telugu-large-v2
+
+  - name: "common-whisper-en-te-long"
+    image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "40Gi"
     env:
@@ -135,9 +180,53 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         openai/whisper-large-v2
+        vasista22/whisper-telugu-large-v2
+
+  - name: "common-whisper-hi-bho-short"
+    image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
+    limits:
+      memory: "10Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+
+  - name: "common-whisper-hi-bho-long"
+    image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
+    limits:
+      memory: "40Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        vasista22/whisper-hindi-large-v2
+        Harveenchadha/vakyansh-wav2vec2-bhojpuri-bhom-60
+
+  - name: "retro-nemo-asr"
+    image: *retroImg
+    autoscaling:
+      minReplicaCount: 0
+    limits:
+      memory: "20Gi"
+    env:
+      IMPORTS: |-
+          retro.nvidia_nemo
+      NEMO_ASR_MODEL_IDS: |-
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
+          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "common-audio-ldm-bark"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "20Gi"
     env:
