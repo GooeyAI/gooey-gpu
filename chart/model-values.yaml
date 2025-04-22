@@ -134,7 +134,7 @@ deployments:
     image: *deforumImg
     autoscaling:
       queueLength: 2
-      minReplicaCount: 1
+      minReplicaCount: 0
       maxReplicaCount: 3
     limits:
       memory: "20Gi"
