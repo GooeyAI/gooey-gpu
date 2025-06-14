@@ -24,17 +24,17 @@ autoscaling:
     - LLM_MODEL_IDS
 
 controlnetModelIds: &controlnetModelIds |-
-    lllyasviel/sd-controlnet-canny
-    lllyasviel/sd-controlnet-depth
-    lllyasviel/sd-controlnet-hed
-    lllyasviel/sd-controlnet-mlsd
-    lllyasviel/sd-controlnet-normal
-    lllyasviel/sd-controlnet-openpose
-    lllyasviel/sd-controlnet-scribble
-    lllyasviel/sd-controlnet-seg
-    lllyasviel/control_v11f1e_sd15_tile
-    ioclab/control_v1p_sd15_brightness
-    monster-labs/control_v1p_sd15_qrcode_monster/v2
+  lllyasviel/sd-controlnet-canny
+  lllyasviel/sd-controlnet-depth
+  lllyasviel/sd-controlnet-hed
+  lllyasviel/sd-controlnet-mlsd
+  lllyasviel/sd-controlnet-normal
+  lllyasviel/sd-controlnet-openpose
+  lllyasviel/sd-controlnet-scribble
+  lllyasviel/sd-controlnet-seg
+  lllyasviel/control_v11f1e_sd15_tile
+  ioclab/control_v1p_sd15_brightness
+  monster-labs/control_v1p_sd15_qrcode_monster/v2
 
 commonImgOld: &commonImgOld "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:3"
 commonImg: &commonImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:8"
@@ -55,6 +55,8 @@ deployments:
         Lykon/DreamShaper
   - name: "common-diffusion-stable-diffusion-2-1"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "35Gi"
     env:
@@ -77,6 +79,8 @@ deployments:
         dreamlike-art/dreamlike-photoreal-2.0
   - name: "common-diffusion-stable-diffusion-v1-5"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "35Gi"
     env:
@@ -106,6 +110,8 @@ deployments:
 
   - name: "common-diffusion-inpaint"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "20Gi"
     env:
@@ -218,10 +224,10 @@ deployments:
       memory: "20Gi"
     env:
       IMPORTS: |-
-          retro.nvidia_nemo
+        retro.nvidia_nemo
       NEMO_ASR_MODEL_IDS: |-
-          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
-          https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
+        https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
+        https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "common-audio-ldm-bark"
     image: *commonImgOld
@@ -244,7 +250,7 @@ deployments:
     image: *commonImg
     limits_gpu: "10Gi"
     limits:
-      memory: "28Gi"  # (220 / 80) * 10
+      memory: "28Gi" # (220 / 80) * 10
     env:
       IMPORTS: |-
         common.seamless_asr
@@ -289,6 +295,7 @@ deployments:
     image: *commonImgOld
     autoscaling:
       queueLength: 20
+      minReplicaCount: 0
     limits:
       memory: "18Gi"
     env:
@@ -335,6 +342,7 @@ deployments:
     image: *retroImg
     autoscaling:
       queueLength: 20
+      minReplicaCount: 0
     limits:
       memory: "9Gi"
     env:
@@ -368,7 +376,7 @@ deployments:
       minReplicaCount: 0
     limits_gpu: "30Gi"
     limits:
-      memory: "80Gi"  # (220 / 80) * 30
+      memory: "80Gi" # (220 / 80) * 30
     env:
       IMPORTS: |-
         common.llms
