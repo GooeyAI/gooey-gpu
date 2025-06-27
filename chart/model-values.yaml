@@ -53,6 +53,7 @@ deployments:
       CONTROLNET_MODEL_IDS: *controlnetModelIds
       SD_MODEL_IDS: |-
         Lykon/DreamShaper
+
   - name: "common-diffusion-stable-diffusion-2-1"
     image: *commonImgOld
     autoscaling:
@@ -66,8 +67,11 @@ deployments:
       CONTROLNET_MODEL_IDS: *controlnetModelIds
       SD_MODEL_IDS: |-
         stabilityai/stable-diffusion-2-1
+
   - name: "common-diffusion-dreamlike-photoreal-2"
     image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 0
     limits:
       memory: "35Gi"
     env:
@@ -77,6 +81,7 @@ deployments:
       CONTROLNET_MODEL_IDS: *controlnetModelIds
       SD_MODEL_IDS: |-
         dreamlike-art/dreamlike-photoreal-2.0
+
   - name: "common-diffusion-stable-diffusion-v1-5"
     image: *commonImgOld
     autoscaling:
@@ -126,7 +131,7 @@ deployments:
     image: *deforumImg
     autoscaling:
       queueLength: 2
-      minReplicaCount: 2
+      minReplicaCount: 0
       maxReplicaCount: 12
     limits:
       memory: "20Gi"
@@ -313,7 +318,7 @@ deployments:
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:14"
     autoscaling:
       queueLength: 2
-      minReplicaCount: 3
+      minReplicaCount: 1
       maxReplicaCount: 10
     limits_gpu: "8Gi"
     limits:
@@ -327,7 +332,7 @@ deployments:
   - name: "retro-wav2lip-gan"
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:14"
     autoscaling:
-      minReplicaCount: 2
+      minReplicaCount: 1
       maxReplicaCount: 10
     limits_gpu: "10Gi"
     limits:
