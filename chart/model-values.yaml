@@ -155,6 +155,19 @@ deployments:
       DEFORUM_MODEL_IDS: |-
         epicdream.safetensors
 
+  - name: "common-whisper-sunbird-short"
+    image: *commonImgOld
+    autoscaling:
+      minReplicaCount: 1
+    limits:
+      memory: "20Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        Sunbird/asr-whisper-large-v3-salt
+
   - name: "common-whisper-en-short"
     image: *commonImgOld
     limits:
