@@ -34,7 +34,7 @@ spec:
 {{/*            privileged: true*/}}
 {{/*            runAsNonRoot: false*/}}
 {{/*            runAsUser: 0*/}}
-          image: "nvcr.io/nvidia/cuda:12.5.0-runtime-ubuntu22.04"
+          image: "nvcr.io/nvidia/cuda:12.4.1-runtime-ubuntu22.04"
           volumeMounts:
             - name: host
               mountPath: /host
