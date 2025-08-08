@@ -159,6 +159,7 @@ deployments:
     image: *commonImgOld
     autoscaling:
       minReplicaCount: 1
+    limits_gpu: "7Gi"
     limits:
       memory: "20Gi"
     env:
@@ -172,6 +173,7 @@ deployments:
     image: *commonImgOld
     autoscaling:
       minReplicaCount: 0
+    limits_gpu: "4Gi"
     limits:
       memory: "10Gi"
     env:
@@ -185,6 +187,7 @@ deployments:
     image: *commonImgOld
     autoscaling:
       minReplicaCount: 0
+    limits_gpu: "18Gi"
     limits:
       memory: "30Gi"
     env:
