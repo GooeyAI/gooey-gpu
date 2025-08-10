@@ -189,7 +189,7 @@ deployments:
       minReplicaCount: 0
     limits_gpu: "18Gi"
     limits:
-      memory: "30Gi"
+      memory: "50Gi"
     env:
       QUEUE_PREFIX: "gooey-gpu/long"
       IMPORTS: |-
