@@ -198,16 +198,19 @@ gooey-gpu also provides a small python helper library to make it easy to write c
 
 10. Once you are confident that the model is working as expected, upload the docker image to a container registry.
 
+    For exaxmple, if building the 5th version of `gooey-gpu-common` from the `common` directory:
+
     ```bash
-    docker tag gooey-gpu-common <registry>/<image>:<tag>
-    docker push <registry>/<image>:<tag>
+    docker build common -t gooey-gpu-common
+    docker tag gooey-gpu-common <registry>/gooey-gpu-common:5
+    docker push <registry>/gooey-gpu-common:5
     ```
 
     You might need to login to your container registry before pushing the image. Eg for azure:
     ```bash
     az acr login --name <registry>
     ```
-11. Update the `model-values.yaml` file with the new image (or create a new file)
+12. Update the `model-values.yaml` file with the new image (or create a new file)
   - Under `rabbitmqAutoscaling`, add the new env var name
       ```yaml
       rabbitmqAutoscaling:
