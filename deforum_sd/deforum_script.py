@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 import time
-from base64 import b64encode
 from typing import Any
 import gooey_gpu
 
@@ -33,6 +32,7 @@ from helpers.render import (
 )
 from helpers.model_load import load_model, get_model_output_paths
 from helpers.aesthetics import load_aesthetics_model
+from helpers.prompts import Prompts
 
 
 # @markdown **Path Setup**
@@ -89,15 +89,19 @@ class DeforumAnimArgs(BaseModel):
     noise_schedule = "0: (0.02)"  # @param {type:"string"}
     strength_schedule = "0: (0.65)"  # @param {type:"string"}
     contrast_schedule = "0: (1.0)"  # @param {type:"string"}
-    hybrid_video_comp_alpha_schedule = "0:(1)"  # @param {type:"string"}
-    hybrid_video_comp_mask_blend_alpha_schedule = "0:(0.5)"  # @param {type:"string"}
-    hybrid_video_comp_mask_contrast_schedule = "0:(1)"  # @param {type:"string"}
-    hybrid_video_comp_mask_auto_contrast_cutoff_high_schedule = (
+    hybrid_comp_alpha_schedule = "0:(1)"  # @param {type:"string"}
+    hybrid_comp_mask_blend_alpha_schedule = "0:(0.5)"  # @param {type:"string"}
+    hybrid_comp_mask_contrast_schedule = "0:(1)"  # @param {type:"string"}
+    hybrid_comp_mask_auto_contrast_cutoff_high_schedule = (
         "0:(100)"  # @param {type:"string"}
     )
-    hybrid_video_comp_mask_auto_contrast_cutoff_low_schedule = (
+    hybrid_comp_mask_auto_contrast_cutoff_low_schedule = (
         "0:(0)"  # @param {type:"string"}
     )
+
+    # @markdown ####**Sampler Scheduling:**
+    enable_schedule_samplers = False  # @param {type:"boolean"}
+    sampler_schedule = "0:('euler'),10:('dpm2'),20:('dpm2_ancestral'),30:('heun'),40:('euler'),50:('euler_ancestral'),60:('dpm_fast'),70:('dpm_adaptive'),80:('dpmpp_2s_a'),90:('dpmpp_2m')"  # @param {type:"string"}
 
     # @markdown ####**Unsharp mask (anti-blur) Parameters:**
     kernel_schedule = "0: (5)"  # @param {type:"string"}
@@ -108,6 +112,7 @@ class DeforumAnimArgs(BaseModel):
     # @markdown ####**Coherence:**
     color_coherence = "Match Frame 0 LAB"  # @param ['None', 'Match Frame 0 HSV', 'Match Frame 0 LAB', 'Match Frame 0 RGB', 'Video Input'] {type:'string'}
     color_coherence_video_every_N_frames = 1  # @param {type:"integer"}
+    color_force_grayscale = False  # @param {type:"boolean"}
     diffusion_cadence = "1"  # @param ['1','2','3','4','5','6','7','8'] {type:'string'}
 
     # @markdown ####**3D Depth Warping:**
@@ -130,25 +135,26 @@ class DeforumAnimArgs(BaseModel):
     video_mask_path = "/content/video_in.mp4"  # @param {type:"string"}
 
     # @markdown ####**Hybrid Video for 2D/3D Animation Mode:**
-    hybrid_video_generate_inputframes = False  # @param {type:"boolean"}
-    hybrid_video_use_first_frame_as_init_image = True  # @param {type:"boolean"}
-    hybrid_video_motion = (
-        "None"  # @param ['None','Optical Flow','Perspective','Affine']
+    hybrid_generate_inputframes = False  # @param {type:"boolean"}
+    hybrid_use_first_frame_as_init_image = True  # @param {type:"boolean"}
+    hybrid_motion = "None"  # @param ['None','Optical Flow','Perspective','Affine']
+    hybrid_motion_use_prev_img = False  # @param {type:"boolean"}
+    hybrid_flow_method = (
+        "DIS Medium"  # @param ['DenseRLOF','DIS Medium','Farneback','SF']
     )
-    hybrid_video_flow_method = "Farneback"  # @param ['Farneback','DenseRLOF','SF']
-    hybrid_video_composite = False  # @param {type:"boolean"}
-    hybrid_video_comp_mask_type = (
+    hybrid_composite = False  # @param {type:"boolean"}
+    hybrid_comp_mask_type = (
         "None"  # @param ['None', 'Depth', 'Video Depth', 'Blend', 'Difference']
     )
-    hybrid_video_comp_mask_inverse = False  # @param {type:"boolean"}
-    hybrid_video_comp_mask_equalize = "None"  # @param  ['None','Before','After','Both']
-    hybrid_video_comp_mask_auto_contrast = False  # @param {type:"boolean"}
-    hybrid_video_comp_save_extra_frames = False  # @param {type:"boolean"}
-    hybrid_video_use_video_as_mse_image = False  # @param {type:"boolean"}
+    hybrid_comp_mask_inverse = False  # @param {type:"boolean"}
+    hybrid_comp_mask_equalize = "None"  # @param  ['None','Before','After','Both']
+    hybrid_comp_mask_auto_contrast = False  # @param {type:"boolean"}
+    hybrid_comp_save_extra_frames = False  # @param {type:"boolean"}
+    hybrid_use_video_as_mse_image = False  # @param {type:"boolean"}
 
     # @markdown ####**Interpolation:**
     interpolate_key_frames = False  # @param {type:"boolean"}
-    interpolate_x_frames = 4  # @param {type:"number"}
+    interpolate_x_frames = 20  # @param {type:"number"}
 
     # @markdown ####**Resume Animation:**
     resume_from_timestring = False  # @param {type:"boolean"}
@@ -157,6 +163,9 @@ class DeforumAnimArgs(BaseModel):
     prompts = []
 
     animation_prompts = {}
+    neg_animation_prompts = {}
+
+    args = {}
 
 
 # @markdown **Load Settings**
@@ -195,7 +204,8 @@ class DeforumArgs:
 
     # @markdown **Batch Settings**
     n_batch = 1  # @param
-    # batch_name = "StableFun"  # @param {type:"string"}
+    n_samples = 1  # @param
+    batch_name = "StableFun"  # @param {type:"string"}
     filename_format = "{timestring}_{index}_{prompt}.png"  # @param ["{timestring}_{index}_{seed}.png","{timestring}_{index}_{prompt}.png"]
     seed_behavior = "iter"  # @param ["iter","fixed","random","ladder","alternate"]
     seed_iter_N = 1  # @param {type:'integer'}
@@ -204,11 +214,13 @@ class DeforumArgs:
 
     # @markdown **Init Settings**
     use_init = False  # @param {type:"boolean"}
-    strength = 0.1  # @param {type:"number"}
+    strength = 0.65  # @param {type:"number"}
     strength_0_no_init = (
         True  # Set the strength to 0 automatically when no init image is used
     )
     init_image = "https://cdn.pixabay.com/photo/2022/07/30/13/10/green-longhorn-beetle-7353749_1280.jpg"  # @param {type:"string"}
+    add_init_noise = False  # @param {type:"boolean"}
+    init_noise = 0.01  # @param
     # Whiter areas of the mask are areas that change more
     use_mask = False  # @param {type:"boolean"}
     use_alpha_as_mask = False  # use the alpha channel of the init image as the mask
@@ -262,12 +274,15 @@ class DeforumArgs:
     # @markdown **Speed vs VRAM Settings**
     cond_uncond_sync = True  # @param {type:"boolean"}
 
-    n_samples = 1  # doesnt do anything
     precision = "autocast"
     C = 4
     f = 8
 
     prompt = ""
+    cond_prompt = ""
+    cond_prompts = ""
+    uncond_prompt = ""
+    uncond_prompts = ""
     timestring = ""
     init_latent = None
     init_sample = None
@@ -310,7 +325,7 @@ def run(root: Root, args: DeforumArgs, anim_args: DeforumAnimArgs):
     if not args.use_init:
         args.init_image = None
     if args.sampler == "plms" and (args.use_init or anim_args.animation_mode != "None"):
-        print(f"Init images aren't supported with PLMS yet, switching to KLMS")
+        print("Init images aren't supported with PLMS yet, switching to KLMS")
         args.sampler = "klms"
     if args.sampler != "ddim":
         args.ddim_eta = 0
@@ -324,15 +339,20 @@ def run(root: Root, args: DeforumArgs, anim_args: DeforumAnimArgs):
     gc.collect()
     torch.cuda.empty_cache()
 
+    # get prompts
+    cond, uncond = Prompts(
+        prompt=anim_args.animation_prompts, neg_prompt=anim_args.neg_animation_prompts
+    ).as_dict()
+
     # dispatch to appropriate renderer
     if anim_args.animation_mode == "2D" or anim_args.animation_mode == "3D":
-        render_animation(args, anim_args, anim_args.animation_prompts, root)
+        render_animation(root, anim_args, args, cond, uncond)
     elif anim_args.animation_mode == "Video Input":
-        render_input_video(args, anim_args, anim_args.animation_prompts, root)
+        render_input_video(root, anim_args, args, cond, uncond)
     elif anim_args.animation_mode == "Interpolation":
-        render_interpolation(args, anim_args, anim_args.animation_prompts, root)
+        render_interpolation(root, anim_args, args, cond, uncond)
     else:
-        render_image_batch(args, anim_args.prompts, root)
+        render_image_batch(root, anim_args, args, cond, uncond)
 
 
 def create_video(args: DeforumArgs, anim_args: DeforumAnimArgs):
@@ -344,10 +364,10 @@ def create_video(args: DeforumArgs, anim_args: DeforumAnimArgs):
     # mp4_path = "/content/drive/MyDrive/AI/StableDiffusion/2023-01/StableFun/20230101212135.mp4"  # @param {type:"string"}
     render_steps = False  # @param {type: 'boolean'}
     path_name_modifier = "x0_pred"  # @param ["x0_pred","x"]
-    make_gif = False
+    # make_gif = False  # Currently unused
     bitdepth_extension = "exr" if args.bit_depth_output == 32 else "png"
 
-    if skip_video_for_run_all == True:
+    if skip_video_for_run_all:
         print(
             "Skipping video creation, uncheck skip_video_for_run_all if you want to run it"
         )

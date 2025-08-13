@@ -17,6 +17,7 @@ def deforum(pipeline: PipelineInfo, inputs: deforum_script.DeforumAnimArgs):
     # init args
     args = deforum_script.DeforumArgs(batch_name=str(uuid.uuid1()))
     args.seed = pipeline.seed
+    args.__dict__.update(inputs.args)
     if pipeline.scheduler:
         args.sampler = pipeline.scheduler
     anim_args = deforum_script.DeforumAnimArgs()

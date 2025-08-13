@@ -12,8 +12,9 @@ torchvision==0.14.1+cu116
 torchaudio==0.13.1+cu116
 
 ## xformers
+--extra-index-url https://pypi.python.org/simple/
 xformers==0.0.16
-triton==2.0.0.dev20221202
+triton==2.0.0
 
 ## huggingface diffusers
 diffusers ~= 0.15.0
@@ -46,3 +47,4 @@ torchsde ~= 0.2.5
 open-clip-torch ~= 2.10.1
 numpngw ~= 0.1.2
 ipython ~= 8.9.0
+clean-fid ~= 0.1.35

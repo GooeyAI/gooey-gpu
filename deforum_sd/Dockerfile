@@ -33,8 +33,7 @@ RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 
 # setup deforum environment
-RUN git clone --branch patch-1 https://github.com/devxpy/deforum-stable-diffusion.git
-RUN echo '' > deforum-stable-diffusion/src/k_diffusion/__init__.py
+RUN git clone https://github.com/deforum/deforum-stable-diffusion.git
 
 # app dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
