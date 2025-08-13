@@ -28,7 +28,7 @@ RUN curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master
 	pyenv global 3.10
 
 # copy to /src
-ENV WORKDIR /src
+ENV WORKDIR=/src
 RUN mkdir -p $WORKDIR
 WORKDIR $WORKDIR
 
@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	libgl1-mesa-glx \
 	ffmpeg \
 	&& rm -rf /var/lib/apt/lists/*
-COPY deforum_sd/requirements.txt .
+COPY ./requirements.txt .
 RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir Cython && pip install --no-cache-dir -r requirements.txt
 
 # copy sources
