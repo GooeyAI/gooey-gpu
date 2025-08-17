@@ -39,7 +39,7 @@ controlnetModelIds: &controlnetModelIds |-
 commonImgOld: &commonImgOld "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:3"
 commonImg: &commonImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:8"
 retroImg: &retroImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:6"
-deforumImg: &deforumImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-deforum_sd:1"
+deforumImg: &deforumImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-deforum_sd:2"
 
 deployments:
   - name: "common-diffusion-dreamshaper"
