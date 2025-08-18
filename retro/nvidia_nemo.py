@@ -25,14 +25,25 @@ def nemo_asr_api(pipeline: PipelineInfo, inputs: NemoASRInputs) -> AsrOutput:
 
 
 @lru_cache
-def load_model(model_url: str):
-    print(f"Loading nemo asr model {model_url!r}...")
+def load_model(model_id_or_url: str):
+    print(f"Loading nemo asr model {model_id_or_url!r}...")
+    if is_url(model_id_or_url):
+        return load_model_from_url(model_id_or_url)
+    else:
+        return nemo_asr.models.ASRModel.from_pretrained(model_id_or_url)
+
+
+def load_model_from_url(model_url: str):
     # get cached model path
     model_path = os.path.join(gooey_gpu.CHECKPOINTS_DIR, os.path.basename(model_url))
     # if not cached, download again
     gooey_gpu.download_file_to_path(url=model_url, path=model_path, cached=True)
     # load model
     return nemo_asr.models.ASRModel.restore_from(model_path)
+
+
+def is_url(s: str) -> bool:
+    return s.startswith("http://") or s.startswith("https://")
 
 
 setup_queues(
