@@ -39,6 +39,7 @@ controlnetModelIds: &controlnetModelIds |-
 commonImgOld: &commonImgOld "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:3"
 commonImg: &commonImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:8"
 retroImg: &retroImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:6"
+retroImgNemo: &retroImgNemo "crgooeyprodwestus1.azurecr.io/gooey-gpu-retro:7"
 deforumImg: &deforumImg "crgooeyprodwestus1.azurecr.io/gooey-gpu-deforum_sd:2"
 
 deployments:
@@ -278,11 +279,12 @@ deployments:
         https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
   - name: "retro-nemo-mbaza-asr"
-    image: *retroImg
+    image: *retroImgNemo
     autoscaling:
       minReplicaCount: 0
+    limits_gpu: "4Gi"
     limits:
-      memory: "20Gi"
+      memory: "10Gi"
     env:
       IMPORTS: |-
         retro.nvidia_nemo
