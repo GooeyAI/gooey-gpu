@@ -1,5 +1,6 @@
 ## nvidia NeMo
 nemo_toolkit[asr] ~= 1.20.0
+huggingface-hub==0.23.2  # version pinning needed for NeMo
 
 ## pytorch
 --extra-index-url https://download.pytorch.org/whl/cu116
