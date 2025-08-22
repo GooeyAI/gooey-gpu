@@ -201,7 +201,7 @@ gooey-gpu also provides a small python helper library to make it easy to write c
     For exaxmple, if building the 5th version of `gooey-gpu-common` from the `common` directory:
 
     ```bash
-    docker build common -t gooey-gpu-common
+    docker build -f common/Dockerfile -t gooey-gpu-common .
     docker tag gooey-gpu-common <registry>/gooey-gpu-common:5
     docker push <registry>/gooey-gpu-common:5
     ```
