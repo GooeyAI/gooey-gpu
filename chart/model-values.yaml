@@ -278,7 +278,7 @@ deployments:
         https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/english_large_data_fixed.nemo
         https://objectstore.e2enetworks.net/indic-asr-public/checkpoints/conformer/stt_hi_conformer_ctc_large_v2.nemo
 
-  - name: "retro-nemo-mbaza-asr"
+  - name: "retro-nemo-mbaza-asr-short"
     image: *retroImgNemo
     autoscaling:
       minReplicaCount: 0
@@ -286,6 +286,7 @@ deployments:
     limits:
       memory: "10Gi"
     env:
+      QUEUE_PREFIX: "gooey-gpu/short"
       IMPORTS: |-
         retro.nvidia_nemo
       NEMO_ASR_MODEL_IDS: |-
