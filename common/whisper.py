@@ -27,6 +27,8 @@ def whisper(pipeline: PipelineInfo, inputs: WhisperInputs) -> AsrOutput:
         generate_kwargs["language"] = inputs.language
     if inputs.task:
         generate_kwargs["task"] = inputs.task
+    if inputs.max_length:
+        generate_kwargs["max_length"] = inputs.max_length
     if generate_kwargs:
         kwargs["generate_kwargs"] = generate_kwargs
 

@@ -99,10 +99,11 @@ class ImageCaptioningInput(BaseModel):
 
 class WhisperInputs(BaseModel):
     audio: str
-    task: typing.Literal["translate", "transcribe"] = "transcribe"
-    language: str = None
+    task: typing.Literal["translate", "transcribe"] | None = None
+    language: str | None = None
     return_timestamps: bool = False
-    decoder_kwargs: dict = None
+    max_length: int | None = None
+    decoder_kwargs: dict | None = None
 
     chunk_length_s: float = 30
     stride_length_s: typing.Tuple[float, float] = (6, 0)
