@@ -199,6 +199,36 @@ deployments:
         Sunbird/asr-whisper-large-v3-salt
         Jacaranda-Health/ASR-STT
 
+  - name: "common-whisper-akera-kikuyu-short"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:9"
+    autoscaling:
+      minReplicaCount: 0
+    limits_gpu: "5Gi"
+    limits:
+      memory: "13Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/short"
+      WHISPER_TOKENIZER_FROM: "akera/whisper-large-v3-kik-full_v2"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        akera/whisper-large-v3-kik-full_v2
+
+  - name: "common-whisper-akera-kikuyu-long"
+    image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:9"
+    autoscaling:
+      minReplicaCount: 0
+    limits_gpu: "18Gi"
+    limits:
+      memory: "50Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      WHISPER_TOKENIZER_FROM: "akera/whisper-large-v3-kik-full_v2"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        akera/whisper-large-v3-kik-full_v2
+
   - name: "common-whisper-en-short"
     image: *commonImgOld
     limits:
