@@ -218,9 +218,9 @@ deployments:
     image: "crgooeyprodwestus1.azurecr.io/gooey-gpu-common:9"
     autoscaling:
       minReplicaCount: 0
-    limits_gpu: "18Gi"
+    limits_gpu: "10Gi"
     limits:
-      memory: "50Gi"
+      memory: "27Gi"
     env:
       QUEUE_PREFIX: "gooey-gpu/long"
       WHISPER_TOKENIZER_FROM: "akera/whisper-large-v3-kik-full_v2"
