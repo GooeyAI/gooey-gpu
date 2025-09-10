@@ -157,7 +157,7 @@ deployments:
         epicdream.safetensors
 
   - name: "common-whisper-sunbird-short"
-    image: *commonImgOld
+    image: *commonImg
     autoscaling:
       minReplicaCount: 1
     limits_gpu: "7Gi"
@@ -169,6 +169,22 @@ deployments:
         common.whisper
       WHISPER_MODEL_IDS: |-
         Sunbird/asr-whisper-large-v3-salt
+      WHISPER_TOKENIZER_FROM: "Sunbird/asr-whisper-large-v3-salt"
+
+  - name: "common-whisper-sunbird-long"
+    image: *commonImg
+    autoscaling:
+      minReplicaCount: 0
+    limits_gpu: "10Gi"
+    limits:
+      memory: "27Gi"
+    env:
+      QUEUE_PREFIX: "gooey-gpu/long"
+      IMPORTS: |-
+        common.whisper
+      WHISPER_MODEL_IDS: |-
+        Sunbird/asr-whisper-large-v3-salt
+      WHISPER_TOKENIZER_FROM: "Sunbird/asr-whisper-large-v3-salt"
 
   - name: "common-whisper-swahili-short"
     image: *commonImgOld
@@ -184,19 +200,18 @@ deployments:
       WHISPER_MODEL_IDS: |-
         Jacaranda-Health/ASR-STT
 
-  - name: "common-whisper-sunbird-swahili-long"
+  - name: "common-whisper-swahili-long"
     image: *commonImgOld
     autoscaling:
       minReplicaCount: 0
-    limits_gpu: "18Gi"
+    limits_gpu: "8Gi"
     limits:
-      memory: "50Gi"
+      memory: "20Gi"
     env:
       QUEUE_PREFIX: "gooey-gpu/long"
       IMPORTS: |-
         common.whisper
       WHISPER_MODEL_IDS: |-
-        Sunbird/asr-whisper-large-v3-salt
         Jacaranda-Health/ASR-STT
 
   - name: "common-whisper-akera-kikuyu-short"
