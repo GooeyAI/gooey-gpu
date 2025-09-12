@@ -124,6 +124,10 @@ class NemoASRInputs(BaseModel):
     audio: str
 
 
+class TTSInputs(BaseModel):
+    text: str
+    language: typing.Optional[str] = None
+
 class AsrOutputChunk(BaseModel):
     timestamp: typing.Tuple[float, float]
     text: str
