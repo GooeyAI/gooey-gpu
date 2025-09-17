@@ -159,7 +159,7 @@ deployments:
   - name: "common-whisper-sunbird-short"
     image: *commonImg
     autoscaling:
-      minReplicaCount: 1
+      minReplicaCount: 0
     limits_gpu: "7Gi"
     limits:
       memory: "20Gi"
@@ -326,7 +326,7 @@ deployments:
   - name: "retro-nemo-mbaza-asr"
     image: *retroImgNemo
     autoscaling:
-      minReplicaCount: 0
+      minReplicaCount: 1
     limits_gpu: "4Gi"
     limits:
       memory: "10Gi"
